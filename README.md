@@ -1,4 +1,4 @@
-# nathanbrizzee-cdcr/feathers-nats-distributed
+# feathers-nats-distributed
 <img src="https://img.shields.io/github/tag/oizpans/feathers-mq.svg" /> <img src="https://img.shields.io/npm/v/@feathersjs/feathers.svg?label=@feathersjs/feathers" /> <img src="https://img.shields.io/npm/v/nats.svg?label=nats" />
 
 FeathersJS message queue wrapper for the client and server.
@@ -19,7 +19,7 @@ const feathers = require('@feathersjs/feathers');
 const mongoose = require('mongoose');
 const services = require('./services');
 
-const { Server } = require('feathers-mq');
+const { Server } = require('feathers-nats-distributed');
 
 mongoose.Promise = global.Promise;
 
@@ -30,7 +30,7 @@ const app = feathers();
 // set the name of app - required
 app.set('name', 'ServerName');
 
-// services must be configured first before feathers-mq server if we want to add listeners to the services on mq
+// services must be configured first before feathers-nats-distributed server if we want to add listeners to the services on mq
 app.configure(services);
 
 // setup mq transport for server
@@ -45,7 +45,7 @@ module.exports = app;
 ### Client:
 ```js
 const feathers = require('@feathersjs/feathers');
-const { Client } = require('feathers-mq');
+const { Client } = require('feathers-nats-distributed');
 
 const app = feathers();
 
