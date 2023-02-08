@@ -1,42 +1,37 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-import Debug from "debug";
-const debug = Debug("feathers-nats-distributed:server:index");
-import { BadRequest } from "@feathersjs/errors";
-import { getInstance } from "../instance";
-import responses from "./response-handler";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Server = void 0;
+const debug_1 = __importDefault(require("debug"));
+const debug = (0, debug_1.default)("feathers-nats-distributed:server:index");
+const errors_1 = require("@feathersjs/errors");
+const instance_1 = require("../instance");
+const response_handler_1 = __importDefault(require("./response-handler"));
 let nats;
-const MQServer = function MQServer(appName, natsConfig) {
-    return __awaiter(this, void 0, void 0, function* () {
-        nats = yield getInstance(natsConfig);
-        return function mqserver() {
-            return __awaiter(this, void 0, void 0, function* () {
-                const app = this;
-                app.set("natsInstance", nats);
-                try {
-                    const conns = [];
-                    const resp = new responses(app, appName, nats);
-                    conns.push(resp.createService("find", ""));
-                    conns.push(resp.createService("get", ""));
-                    conns.push(resp.createService("create", ""));
-                    conns.push(resp.createService("patch", ""));
-                    conns.push(resp.createService("update", ""));
-                    conns.push(resp.createService("remove", ""));
-                    yield Promise.all(conns);
-                }
-                catch (e) {
-                    throw new BadRequest(e.message, "An error occurred creating NATS service subscribers");
-                }
-            });
-        };
+const Server = function (config) {
+    (0, instance_1.getInstance)(config.natsConfig).then(natsConn => {
+        nats = natsConn;
     });
+    return function mqserver() {
+        const app = this;
+        app.set("natsInstance", nats);
+        try {
+            const conns = [];
+            const resp = new response_handler_1.default(app, config.appName, nats);
+            conns.push(resp.createService("find", ""));
+            conns.push(resp.createService("get", ""));
+            conns.push(resp.createService("create", ""));
+            conns.push(resp.createService("patch", ""));
+            conns.push(resp.createService("update", ""));
+            conns.push(resp.createService("remove", ""));
+        }
+        catch (e) {
+            throw new errors_1.BadRequest(e.message, "An error occurred creating NATS service subscribers");
+        }
+        return this;
+    };
 };
-export { MQServer };
+exports.Server = Server;
 //# sourceMappingURL=index.js.map

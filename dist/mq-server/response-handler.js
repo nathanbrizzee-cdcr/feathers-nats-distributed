@@ -15,14 +15,18 @@ var __asyncValues = (this && this.__asyncValues) || function (o) {
     function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
     function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
 };
-import { StringCodec, JSONCodec, } from "nats";
-import { NotFound, MethodNotAllowed } from "@feathersjs/errors";
-import Debug from "debug";
-const debug = Debug("feathers-nats-distributed:server:responses:index");
-export default class natsResponse {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const nats_1 = require("nats");
+const errors_1 = require("@feathersjs/errors");
+const debug_1 = __importDefault(require("debug"));
+const debug = (0, debug_1.default)("feathers-nats-distributed:server:responses:index");
+class natsResponse {
     constructor(app, appName, nats) {
-        this.jsonCodec = JSONCodec();
-        this.stringCodec = StringCodec();
+        this.jsonCodec = (0, nats_1.JSONCodec)();
+        this.stringCodec = (0, nats_1.StringCodec)();
         this.app = app;
         this.appName = appName;
         this.nats = nats;
@@ -66,7 +70,7 @@ export default class natsResponse {
                         const m = _c;
                         const svcInfo = this.getServiceName(m.subject);
                         if (!this.Services.includes(svcInfo.serviceName)) {
-                            const errorResponse = new NotFound();
+                            const errorResponse = new errors_1.NotFound();
                             debug("error response %O", errorResponse);
                             if (m.respond(this.jsonCodec.encode(errorResponse))) {
                                 console.log(`[${serviceURLName}] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`);
@@ -78,7 +82,7 @@ export default class natsResponse {
                         }
                         const availableMethods = Object.keys(this.app.services[svcInfo.serviceName]);
                         if (!availableMethods.includes(svcInfo.methodName)) {
-                            const errorResponse = new MethodNotAllowed(`Method \`${svcInfo.methodName}\` is not supported by this endpoint.`);
+                            const errorResponse = new errors_1.MethodNotAllowed(`Method \`${svcInfo.methodName}\` is not supported by this endpoint.`);
                             debug("error response %O", errorResponse);
                             if (m.respond(this.jsonCodec.encode(errorResponse))) {
                                 console.log(`[${serviceURLName}] #${sub.getProcessed()} echoed ${this.jsonCodec.decode(m.data)}`);
@@ -150,4 +154,5 @@ export default class natsResponse {
         });
     }
 }
+exports.default = natsResponse;
 //# sourceMappingURL=response-handler.js.map

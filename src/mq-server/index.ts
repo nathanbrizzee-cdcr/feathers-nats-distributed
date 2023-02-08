@@ -7,13 +7,20 @@ import responses from "./response-handler"
 
 let nats: NatsConnection
 
-const MQServer = async function MQServer(
-  appName: string,
+export type ServerInitConfig = {
+  appName: string
   natsConfig: ConnectionOptions
-): Promise<(this: any) => void> {
-  nats = await getInstance(natsConfig)
+}
+export type ServerInstance = (config: ServerInitConfig) => (this: any) => void
 
-  return async function mqserver(this: any): Promise<void> {
+export type ServerInstanceCallback = (this: any) => any
+
+const Server = function (config: ServerInitConfig): ServerInstance {
+  getInstance(config.natsConfig).then(natsConn => {
+    nats = natsConn
+  })
+
+  return function mqserver(this: any): ServerInstanceCallback {
     const app: any = this as any
     app.set("natsInstance", nats)
 
@@ -22,15 +29,13 @@ const MQServer = async function MQServer(
     // }
     try {
       const conns = []
-      const resp = new responses(app, appName, nats)
+      const resp = new responses(app, config.appName, nats)
       conns.push(resp.createService("find", ""))
       conns.push(resp.createService("get", ""))
       conns.push(resp.createService("create", ""))
       conns.push(resp.createService("patch", ""))
       conns.push(resp.createService("update", ""))
       conns.push(resp.createService("remove", ""))
-
-      await Promise.all(conns)
     } catch (e: any) {
       throw new BadRequest(
         e.message,
@@ -41,7 +46,8 @@ const MQServer = async function MQServer(
     // app.mq = {
     //   subs: nats.subs,
     // };
+    return this
   }
 }
 
-export { MQServer }
+export { Server }
