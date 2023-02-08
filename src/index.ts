@@ -1,4 +1,7 @@
-import {MQServer as Server} from './mq-server/index'
-// import Client from './mq-client/index';
+const { MQServer } = require("./mq-server")
+//const Client = require('./mq-client');
 
-export {Server}
+module.exports = {
+  Server: MQServer,
+  //Client,
+}

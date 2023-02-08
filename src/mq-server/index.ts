@@ -20,14 +20,23 @@ const MQServer = async function MQServer(
     // if (!app.get("name")) {
     //   throw new BadRequest("App name (app.name) is required ")
     // }
-    const resp = new responses(app, appName, nats)
-    const findSvc = await resp.createService("find", "")
-    const getSvc = await resp.createService("get", "")
-    const createSvc = await resp.createService("create", "")
-    const patchSvc = await resp.createService("patch", "")
-    const updateSvc = await resp.createService("update", "")
-    const removeSvc = await resp.createService("remove", "")
+    try {
+      const conns = []
+      const resp = new responses(app, appName, nats)
+      conns.push(resp.createService("find", ""))
+      conns.push(resp.createService("get", ""))
+      conns.push(resp.createService("create", ""))
+      conns.push(resp.createService("patch", ""))
+      conns.push(resp.createService("update", ""))
+      conns.push(resp.createService("remove", ""))
 
+      await Promise.all(conns)
+    } catch (e: any) {
+      throw new BadRequest(
+        e.message,
+        "An error occurred creating NATS service subscribers"
+      )
+    }
     //app.nats = nats
     // app.mq = {
     //   subs: nats.subs,

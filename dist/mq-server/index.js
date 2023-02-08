@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import Debug from "debug";
 const debug = Debug("feathers-nats-distributed:server:index");
+import { BadRequest } from "@feathersjs/errors";
 import { getInstance } from "../instance";
 import responses from "./response-handler";
 let nats;
@@ -19,13 +20,20 @@ const MQServer = function MQServer(appName, natsConfig) {
             return __awaiter(this, void 0, void 0, function* () {
                 const app = this;
                 app.set("natsInstance", nats);
-                const resp = new responses(app, appName, nats);
-                const findSvc = yield resp.createService("find", "");
-                const getSvc = yield resp.createService("get", "");
-                const createSvc = yield resp.createService("create", "");
-                const patchSvc = yield resp.createService("patch", "");
-                const updateSvc = yield resp.createService("update", "");
-                const removeSvc = yield resp.createService("remove", "");
+                try {
+                    const conns = [];
+                    const resp = new responses(app, appName, nats);
+                    conns.push(resp.createService("find", ""));
+                    conns.push(resp.createService("get", ""));
+                    conns.push(resp.createService("create", ""));
+                    conns.push(resp.createService("patch", ""));
+                    conns.push(resp.createService("update", ""));
+                    conns.push(resp.createService("remove", ""));
+                    yield Promise.all(conns);
+                }
+                catch (e) {
+                    throw new BadRequest(e.message, "An error occurred creating NATS service subscribers");
+                }
             });
         };
     });
