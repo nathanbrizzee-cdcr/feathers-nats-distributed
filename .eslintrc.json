@@ -1,30 +1,24 @@
 {
+  // https://blog.logrocket.com/linting-typescript-eslint-prettier/
   "env": {
-    "es6": true,
-    "node": true,
-    "jest": true
+    "browser": true,
+    "es2021": true
   },
-  "extends": "airbnb-base",
-  "plugins": ["jest", "no-else"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "prettier"
+  ],
+  "overrides": [],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "plugins": ["@typescript-eslint"],
   "rules": {
-    "max-depth": ["error", 4],
-    "no-else/no-else": 2,
-    "no-underscore-dangle": [2, { "allow": ["_id"] }],
-    "indent": [
-      "error",
-      2
-    ],
-    "linebreak-style": [
-      "error",
-      "unix"
-    ],
-    "quotes": [
-      "error",
-      "single"
-    ],
-    "semi": [
-      "error",
-      "always"
-    ]
+    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/consistent-type-definitions": ["error", "type"],
+    "linebreak-style": ["error", "unix"]
   }
 }
