@@ -16,9 +16,17 @@ const MQServer = function MQServer(appName, natsConfig) {
     return __awaiter(this, void 0, void 0, function* () {
         nats = yield getInstance(natsConfig);
         return function mqserver() {
-            const app = this;
-            app.set("natsInstance", nats);
-            const resp = new responses(app, appName, nats);
+            return __awaiter(this, void 0, void 0, function* () {
+                const app = this;
+                app.set("natsInstance", nats);
+                const resp = new responses(app, appName, nats);
+                const findSvc = yield resp.createService("find", "");
+                const getSvc = yield resp.createService("get", "");
+                const createSvc = yield resp.createService("create", "");
+                const patchSvc = yield resp.createService("patch", "");
+                const updateSvc = yield resp.createService("update", "");
+                const removeSvc = yield resp.createService("remove", "");
+            });
         };
     });
 };

@@ -74,7 +74,7 @@ export default class natsResponse {
 
   public async createService(
     serviceType: string,
-    queueName: string = ""
+    serviceURLName: string = ""
   ): Promise<Subscription> {
     const queueOpts: SubscriptionOptions = {
       queue: `${this.appName}.${serviceType}.>`, // `${appName}.*.find`
@@ -91,13 +91,13 @@ export default class natsResponse {
         debug("error response %O", errorResponse)
         if (m.respond(this.jsonCodec.encode(errorResponse))) {
           console.log(
-            `[${queueName}] #${sub.getProcessed()} echoed ${this.stringCodec.decode(
+            `[${serviceURLName}] #${sub.getProcessed()} echoed ${this.stringCodec.decode(
               m.data
             )}`
           )
         } else {
           console.log(
-            `[${queueName}] #${sub.getProcessed()} ignoring request - no reply subject`
+            `[${serviceURLName}] #${sub.getProcessed()} ignoring request - no reply subject`
           )
         }
         continue
@@ -114,13 +114,13 @@ export default class natsResponse {
         debug("error response %O", errorResponse)
         if (m.respond(this.jsonCodec.encode(errorResponse))) {
           console.log(
-            `[${queueName}] #${sub.getProcessed()} echoed ${this.jsonCodec.decode(
+            `[${serviceURLName}] #${sub.getProcessed()} echoed ${this.jsonCodec.decode(
               m.data
             )}`
           )
         } else {
           console.log(
-            `[${queueName}] #${sub.getProcessed()} ignoring request - no reply subject`
+            `[${serviceURLName}] #${sub.getProcessed()} ignoring request - no reply subject`
           )
         }
         continue

@@ -51,7 +51,7 @@ export default class natsResponse {
         newError.__mqError = __mqError;
         return newError;
     }
-    createService(serviceType, queueName = "") {
+    createService(serviceType, serviceURLName = "") {
         var _a, e_1, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const queueOpts = {
@@ -69,10 +69,10 @@ export default class natsResponse {
                             const errorResponse = new NotFound();
                             debug("error response %O", errorResponse);
                             if (m.respond(this.jsonCodec.encode(errorResponse))) {
-                                console.log(`[${queueName}] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`);
+                                console.log(`[${serviceURLName}] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`);
                             }
                             else {
-                                console.log(`[${queueName}] #${sub.getProcessed()} ignoring request - no reply subject`);
+                                console.log(`[${serviceURLName}] #${sub.getProcessed()} ignoring request - no reply subject`);
                             }
                             continue;
                         }
@@ -81,10 +81,10 @@ export default class natsResponse {
                             const errorResponse = new MethodNotAllowed(`Method \`${svcInfo.methodName}\` is not supported by this endpoint.`);
                             debug("error response %O", errorResponse);
                             if (m.respond(this.jsonCodec.encode(errorResponse))) {
-                                console.log(`[${queueName}] #${sub.getProcessed()} echoed ${this.jsonCodec.decode(m.data)}`);
+                                console.log(`[${serviceURLName}] #${sub.getProcessed()} echoed ${this.jsonCodec.decode(m.data)}`);
                             }
                             else {
-                                console.log(`[${queueName}] #${sub.getProcessed()} ignoring request - no reply subject`);
+                                console.log(`[${serviceURLName}] #${sub.getProcessed()} ignoring request - no reply subject`);
                             }
                             continue;
                         }

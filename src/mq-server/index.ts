@@ -13,7 +13,7 @@ const MQServer = async function MQServer(
 ): Promise<(this: any) => void> {
   nats = await getInstance(natsConfig)
 
-  return function mqserver(this: any): void {
+  return async function mqserver(this: any): Promise<void> {
     const app: any = this as any
     app.set("natsInstance", nats)
 
@@ -21,6 +21,12 @@ const MQServer = async function MQServer(
     //   throw new BadRequest("App name (app.name) is required ")
     // }
     const resp = new responses(app, appName, nats)
+    const findSvc = await resp.createService("find", "")
+    const getSvc = await resp.createService("get", "")
+    const createSvc = await resp.createService("create", "")
+    const patchSvc = await resp.createService("patch", "")
+    const updateSvc = await resp.createService("update", "")
+    const removeSvc = await resp.createService("remove", "")
 
     //app.nats = nats
     // app.mq = {
