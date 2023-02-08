@@ -11,16 +11,18 @@ export type ServerInitConfig = {
   appName: string
   natsConfig: ConnectionOptions
 }
-export type ServerInstance = (config: ServerInitConfig) => (this: any) => void
+//export type ServerInstance = (config: ServerInitConfig) => (this: any) => void
 
-export type ServerInstanceCallback = (this: any) => any
+//export type ServerInstanceCallback = (this: any) => any
 
-const Server = function (config: ServerInitConfig): ServerInstance {
+// configure(callback: (this: this, app: this) => void): this;
+
+const Server = function (config: ServerInitConfig): (this: any) => void {
   getInstance(config.natsConfig).then(natsConn => {
     nats = natsConn
   })
 
-  return function mqserver(this: any): ServerInstanceCallback {
+  return function mqserver(this: any): void {
     const app: any = this as any
     app.set("natsInstance", nats)
 

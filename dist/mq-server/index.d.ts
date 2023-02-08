@@ -3,7 +3,5 @@ export type ServerInitConfig = {
     appName: string;
     natsConfig: ConnectionOptions;
 };
-export type ServerInstance = (config: ServerInitConfig) => (this: any) => void;
-export type ServerInstanceCallback = (this: any) => any;
-declare const Server: (config: ServerInitConfig) => ServerInstance;
+declare const Server: (config: ServerInitConfig) => (this: any) => void;
 export { Server };
