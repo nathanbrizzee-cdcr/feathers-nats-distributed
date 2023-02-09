@@ -19,6 +19,7 @@ import Debug from "debug"
 const debug = Debug("feathers-nats-distributed:server:responses:index")
 
 type ServiceActions = {
+  serverName: string
   serviceName: string
   methodName: string
 }
@@ -41,19 +42,23 @@ export default class natsResponse {
   }
 
   private getServiceName(natsSubject: string): ServiceActions {
-    // const [, serviceName, methodName] = natsSubject.split(".")
+    // natsSubject should look like this "ServerName.get.users"
     const subjectParts: string[] = natsSubject.split(".")
     const serviceActions: ServiceActions = {
+      serverName: "",
       serviceName: "",
       methodName: "",
     }
-    serviceActions.serviceName =
-      subjectParts[Math.max(subjectParts.length - 2, 0)]
-    serviceActions.methodName =
-      subjectParts[Math.max(subjectParts.length - 1, 0)]
+    serviceActions.serverName = subjectParts[0]
+    if (subjectParts.length > 1) {
+      serviceActions.methodName = subjectParts[1]
+    }
+    if (subjectParts.length > 2) {
+      serviceActions.serviceName = subjectParts.slice(2).join("/")
+    }
 
     debug(
-      `${serviceActions.methodName} request for ${this.appName}.${serviceActions.serviceName}`
+      `service request for app=${serviceActions.serverName}; method=${serviceActions.methodName}; service=${serviceActions.serviceName};`
     )
     return serviceActions
   }
@@ -72,13 +77,11 @@ export default class natsResponse {
     return newError
   }
 
-  public async createService(
-    serviceType: string,
-    serviceURLName: string = ""
-  ): Promise<Subscription> {
+  public async createService(serviceType: string): Promise<Subscription> {
     const queueOpts: SubscriptionOptions = {
       queue: `${this.appName}.${serviceType}.>`, // `${appName}.*.find`
     }
+    debug("Creating subscription queue on ", queueOpts)
     // create a subscription - note the option for a queue, if set
     // any client with the same queue will be a member of the group.
     const sub = this.nats.subscribe(<string>queueOpts.queue, queueOpts)
@@ -91,13 +94,15 @@ export default class natsResponse {
         debug("error response %O", errorResponse)
         if (m.respond(this.jsonCodec.encode(errorResponse))) {
           console.log(
-            `[${serviceURLName}] #${sub.getProcessed()} echoed ${this.stringCodec.decode(
-              m.data
-            )}`
+            `[${
+              this.appName
+            }] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`
           )
         } else {
           console.log(
-            `[${serviceURLName}] #${sub.getProcessed()} ignoring request - no reply subject`
+            `[${
+              this.appName
+            }] #${sub.getProcessed()} ignoring request - no reply subject`
           )
         }
         continue
@@ -114,13 +119,15 @@ export default class natsResponse {
         debug("error response %O", errorResponse)
         if (m.respond(this.jsonCodec.encode(errorResponse))) {
           console.log(
-            `[${serviceURLName}] #${sub.getProcessed()} echoed ${this.jsonCodec.decode(
-              m.data
-            )}`
+            `[${
+              this.appName
+            }] #${sub.getProcessed()} echoed ${this.jsonCodec.decode(m.data)}`
           )
         } else {
           console.log(
-            `[${serviceURLName}] #${sub.getProcessed()} ignoring request - no reply subject`
+            `[${
+              this.appName
+            }] #${sub.getProcessed()} ignoring request - no reply subject`
           )
         }
         continue

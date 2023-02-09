@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.closeInstance = exports.getInstance = void 0;
+const lib_1 = require("@feathersjs/errors/lib");
 const debug_1 = __importDefault(require("debug"));
 const debug = (0, debug_1.default)("feathers-nats-distributed:instance");
 const nats_1 = require("nats");
@@ -20,32 +21,24 @@ let instance;
 const getInstance = function (natsConfig = {}) {
     return __awaiter(this, void 0, void 0, function* () {
         let conn = {};
-        Object.assign(conn, natsConfig, {
+        Object.assign(conn, {
             servers: "localhost:4222",
-        });
+        }, natsConfig);
         if (!instance || instance.isClosed()) {
             try {
                 debug("Connecting to NATS with connection", conn);
-                instance = yield (0, nats_1.connect)(conn);
+                try {
+                    instance = yield (0, nats_1.connect)(conn);
+                }
+                catch (err) {
+                    debug(err);
+                    throw new lib_1.BadRequest("NATS connection exited because of error:", err);
+                }
                 instance.closed().then(err => {
                     if (err) {
                         console.error(`NATS connection exited because of error: ${err.message}`);
+                        throw new lib_1.BadRequest("NATS connection exited because of error:", err.message);
                     }
-                });
-                instance.on("connect", () => {
-                    debug("Connected to NATS as Server");
-                });
-                instance.on("error", err => {
-                    debug("nats connection errored", err);
-                });
-                instance.on("disconnect", () => {
-                    debug("nats connection disconnected");
-                });
-                instance.on("close", () => {
-                    debug("nats connection closed");
-                });
-                instance.on("timeout", () => {
-                    debug("nats connection timeout");
                 });
                 debug("Connected to NATS server");
                 return instance;

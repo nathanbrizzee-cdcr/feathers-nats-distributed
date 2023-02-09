@@ -35,14 +35,18 @@ class natsResponse {
     getServiceName(natsSubject) {
         const subjectParts = natsSubject.split(".");
         const serviceActions = {
+            serverName: "",
             serviceName: "",
             methodName: "",
         };
-        serviceActions.serviceName =
-            subjectParts[Math.max(subjectParts.length - 2, 0)];
-        serviceActions.methodName =
-            subjectParts[Math.max(subjectParts.length - 1, 0)];
-        debug(`${serviceActions.methodName} request for ${this.appName}.${serviceActions.serviceName}`);
+        serviceActions.serverName = subjectParts[0];
+        if (subjectParts.length > 1) {
+            serviceActions.methodName = subjectParts[1];
+        }
+        if (subjectParts.length > 2) {
+            serviceActions.serviceName = subjectParts.slice(2).join("/");
+        }
+        debug(`service request for app=${serviceActions.serverName}; method=${serviceActions.methodName}; service=${serviceActions.serviceName};`);
         return serviceActions;
     }
     wrapError(error) {
@@ -55,12 +59,13 @@ class natsResponse {
         newError.__mqError = __mqError;
         return newError;
     }
-    createService(serviceType, serviceURLName = "") {
+    createService(serviceType) {
         var _a, e_1, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const queueOpts = {
                 queue: `${this.appName}.${serviceType}.>`,
             };
+            debug("Creating subscription queue on ", queueOpts);
             const sub = this.nats.subscribe(queueOpts.queue, queueOpts);
             try {
                 for (var _d = true, sub_1 = __asyncValues(sub), sub_1_1; sub_1_1 = yield sub_1.next(), _a = sub_1_1.done, !_a;) {
@@ -73,10 +78,10 @@ class natsResponse {
                             const errorResponse = new errors_1.NotFound();
                             debug("error response %O", errorResponse);
                             if (m.respond(this.jsonCodec.encode(errorResponse))) {
-                                console.log(`[${serviceURLName}] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`);
+                                console.log(`[${this.appName}] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`);
                             }
                             else {
-                                console.log(`[${serviceURLName}] #${sub.getProcessed()} ignoring request - no reply subject`);
+                                console.log(`[${this.appName}] #${sub.getProcessed()} ignoring request - no reply subject`);
                             }
                             continue;
                         }
@@ -85,10 +90,10 @@ class natsResponse {
                             const errorResponse = new errors_1.MethodNotAllowed(`Method \`${svcInfo.methodName}\` is not supported by this endpoint.`);
                             debug("error response %O", errorResponse);
                             if (m.respond(this.jsonCodec.encode(errorResponse))) {
-                                console.log(`[${serviceURLName}] #${sub.getProcessed()} echoed ${this.jsonCodec.decode(m.data)}`);
+                                console.log(`[${this.appName}] #${sub.getProcessed()} echoed ${this.jsonCodec.decode(m.data)}`);
                             }
                             else {
-                                console.log(`[${serviceURLName}] #${sub.getProcessed()} ignoring request - no reply subject`);
+                                console.log(`[${this.appName}] #${sub.getProcessed()} ignoring request - no reply subject`);
                             }
                             continue;
                         }

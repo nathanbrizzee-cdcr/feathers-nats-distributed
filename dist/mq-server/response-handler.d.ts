@@ -9,5 +9,5 @@ export default class natsResponse {
     constructor(app: any, appName: string, nats: NatsConnection);
     private getServiceName;
     private wrapError;
-    createService(serviceType: string, serviceURLName?: string): Promise<Subscription>;
+    createService(serviceType: string): Promise<Subscription>;
 }

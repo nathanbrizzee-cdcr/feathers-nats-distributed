@@ -18,36 +18,44 @@ export type ServerInitConfig = {
 // configure(callback: (this: this, app: this) => void): this;
 
 const Server = function (config: ServerInitConfig): (this: any) => void {
-  getInstance(config.natsConfig).then(natsConn => {
-    nats = natsConn
-  })
+  // async function main() {
+  //   nats = await getInstance(config.natsConfig)
+  // }
+  // main()
 
   return function mqserver(this: any): void {
     const app: any = this as any
-    app.set("natsInstance", nats)
 
-    // if (!app.get("name")) {
-    //   throw new BadRequest("App name (app.name) is required ")
-    // }
-    try {
-      const conns = []
-      const resp = new responses(app, config.appName, nats)
-      conns.push(resp.createService("find", ""))
-      conns.push(resp.createService("get", ""))
-      conns.push(resp.createService("create", ""))
-      conns.push(resp.createService("patch", ""))
-      conns.push(resp.createService("update", ""))
-      conns.push(resp.createService("remove", ""))
-    } catch (e: any) {
-      throw new BadRequest(
-        e.message,
-        "An error occurred creating NATS service subscribers"
-      )
+    async function main() {
+      if (!config.appName) {
+        throw new BadRequest("appName (the name of this server) is required ")
+      }
+
+      nats = await getInstance(config.natsConfig)
+      app.set("natsInstance", nats)
+
+      try {
+        const conns = []
+        const resp = new responses(app, config.appName, nats)
+        conns.push(resp.createService("find"))
+        conns.push(resp.createService("get"))
+        conns.push(resp.createService("create"))
+        conns.push(resp.createService("patch"))
+        conns.push(resp.createService("update"))
+        conns.push(resp.createService("remove"))
+        Promise.all(conns)
+      } catch (e) {
+        throw new BadRequest(
+          "An error occurred creating NATS service subscribers",
+          e
+        )
+      }
+      //app.nats = nats
+      // app.mq = {
+      //   subs: nats.subs,
+      // };
     }
-    //app.nats = nats
-    // app.mq = {
-    //   subs: nats.subs,
-    // };
+    main()
     return this
   }
 }

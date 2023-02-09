@@ -1,3 +1,4 @@
+import { BadRequest } from "@feathersjs/errors/lib"
 import Debug from "debug"
 const debug = Debug("feathers-nats-distributed:instance")
 import { connect, NatsConnection, ConnectionOptions } from "nats"
@@ -13,45 +14,58 @@ const getInstance = async function (
   natsConfig: ConnectionOptions = {}
 ): Promise<NatsConnection> {
   let conn: ConnectionOptions = {}
-  Object.assign(conn, natsConfig, {
-    servers: "localhost:4222",
-  })
+  Object.assign(
+    conn,
+    {
+      servers: "localhost:4222",
+    },
+    natsConfig
+  )
   if (!instance || instance.isClosed()) {
     try {
       debug("Connecting to NATS with connection", conn)
-      instance = await connect(conn)
+      try {
+        instance = await connect(conn)
+      } catch (err) {
+        debug(err)
+        throw new BadRequest("NATS connection exited because of error:", err)
+      }
       instance.closed().then(err => {
         if (err) {
           console.error(
             `NATS connection exited because of error: ${err.message}`
           )
+          throw new BadRequest(
+            "NATS connection exited because of error:",
+            err.message
+          )
         }
       })
 
-      // @ts-expect-error
-      instance.on("connect", () => {
-        debug("Connected to NATS as Server")
-      })
+      // // @ts-expect-error
+      // instance.on("connect", () => {
+      //   debug("Connected to NATS as Server")
+      // })
 
-      // @ts-expect-error
-      instance.on("error", err => {
-        debug("nats connection errored", err)
-      })
+      // // @ts-expect-error
+      // instance.on("error", err => {
+      //   debug("nats connection errored", err)
+      // })
 
-      // @ts-expect-error
-      instance.on("disconnect", () => {
-        debug("nats connection disconnected")
-      })
+      // // @ts-expect-error
+      // instance.on("disconnect", () => {
+      //   debug("nats connection disconnected")
+      // })
 
-      // @ts-expect-error
-      instance.on("close", () => {
-        debug("nats connection closed")
-      })
+      // // @ts-expect-error
+      // instance.on("close", () => {
+      //   debug("nats connection closed")
+      // })
 
-      // @ts-expect-error
-      instance.on("timeout", () => {
-        debug("nats connection timeout")
-      })
+      // // @ts-expect-error
+      // instance.on("timeout", () => {
+      //   debug("nats connection timeout")
+      // })
 
       debug("Connected to NATS server")
       return instance
