@@ -18,11 +18,6 @@ export type ServerInitConfig = {
 // configure(callback: (this: this, app: this) => void): this;
 
 const Server = function (config: ServerInitConfig): (this: any) => void {
-  // async function main() {
-  //   nats = await getInstance(config.natsConfig)
-  // }
-  // main()
-
   return function mqserver(this: any): void {
     const app: any = this as any
 
@@ -50,10 +45,6 @@ const Server = function (config: ServerInitConfig): (this: any) => void {
           e
         )
       }
-      //app.nats = nats
-      // app.mq = {
-      //   subs: nats.subs,
-      // };
     }
     main()
     return this

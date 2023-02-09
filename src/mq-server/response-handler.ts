@@ -1,22 +1,15 @@
 "use strict"
-import { promises as fsPromises } from "fs"
-import * as path from "path"
 import {
   StringCodec,
   JSONCodec,
   Codec,
-  Service,
-  ServiceInfo,
-  ServiceGroup,
-  ServiceConfig,
   NatsConnection,
   Subscription,
   SubscriptionOptions,
-  Msg,
 } from "nats"
-import { GeneralError, NotFound, MethodNotAllowed } from "@feathersjs/errors"
+import { NotFound, MethodNotAllowed } from "@feathersjs/errors"
 import Debug from "debug"
-const debug = Debug("feathers-nats-distributed:server:responses:index")
+const debug = Debug("feathers-nats-distributed:server:response-handler")
 
 type ServiceActions = {
   serverName: string
@@ -62,6 +55,21 @@ export default class natsResponse {
     )
     return serviceActions
   }
+  // {
+  //   "stack":"NotFound: No record found for id '1' at UserService._get (/home/vagrant/code/feathers5/feathers-chat/node_modules/@feathersjs/knex/lib/adapter.js:169:19)  at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async UserService.<anonymous> (/home/vagrant/code/feathers5/feathers-chat/node_modules/@feathersjs/schema/lib/hooks/resolve.js:81:13)\n    at async UserService.<anonymous> (/home/vagrant/code/feathers5/feathers-chat/node_modules/@feathersjs/schema/lib/hooks/resolve.js:124:9)\n    at async UserService.logError (/home/vagrant/code/feathers5/feathers-chat/lib/hooks/log-error.js:7:9)",
+  //   "message":"No record found for id '1'",
+  //   "name":"NotFound",
+  //   "code":404,
+  //   "className":"not-found",
+  //   "type":"FeathersError",
+  //   "__mqError":{
+  //     "stack":"NotFound: No record found for id '1'\n    at UserService._get (/home/vagrant/code/feathers5/feathers-chat/node_modules/@feathersjs/knex/lib/adapter.js:169:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async UserService.<anonymous> (/home/vagrant/code/feathers5/feathers-chat/node_modules/@feathersjs/schema/lib/hooks/resolve.js:81:13)\n    at async UserService.<anonymous> (/home/vagrant/code/feathers5/feathers-chat/node_modules/@feathersjs/schema/lib/hooks/resolve.js:124:9)\n    at async UserService.logError (/home/vagrant/code/feathers5/feathers-chat/lib/hooks/log-error.js:7:9)",
+  //     "message":"No record found for id '1'",
+  //     "name":"NotFound",
+  //     "code":404,
+  //     "className":"not-found",
+  //     "type":"FeathersError"}
+  //   }
 
   private wrapError(error: any) {
     const newError: StringMap = {}
@@ -79,7 +87,7 @@ export default class natsResponse {
 
   public async createService(serviceType: string): Promise<Subscription> {
     const queueOpts: SubscriptionOptions = {
-      queue: `${this.appName}.${serviceType}.>`, // `${appName}.*.find`
+      queue: `${this.appName}.${serviceType}.>`,
     }
     debug("Creating subscription queue on ", queueOpts)
     // create a subscription - note the option for a queue, if set
@@ -90,18 +98,20 @@ export default class natsResponse {
 
       // check if service is registered
       if (!this.Services.includes(svcInfo.serviceName)) {
-        const errorResponse = new NotFound()
+        const errorResponse = new NotFound(
+          `Service \`${svcInfo.serviceName}\` is not registered in this server.`
+        )
         debug("error response %O", errorResponse)
         if (m.respond(this.jsonCodec.encode(errorResponse))) {
           console.log(
             `[${
-              this.appName
+              svcInfo.serverName
             }] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`
           )
         } else {
           console.log(
             `[${
-              this.appName
+              svcInfo.serverName
             }] #${sub.getProcessed()} ignoring request - no reply subject`
           )
         }
@@ -120,13 +130,13 @@ export default class natsResponse {
         if (m.respond(this.jsonCodec.encode(errorResponse))) {
           console.log(
             `[${
-              this.appName
+              svcInfo.serverName
             }] #${sub.getProcessed()} echoed ${this.jsonCodec.decode(m.data)}`
           )
         } else {
           console.log(
             `[${
-              this.appName
+              svcInfo.serverName
             }] #${sub.getProcessed()} ignoring request - no reply subject`
           )
         }
@@ -179,7 +189,11 @@ export default class natsResponse {
         const retal = m.respond(this.jsonCodec.encode(result))
       } catch (err: any) {
         delete err.hook
-        m.respond(this.jsonCodec.encode(this.wrapError(err)))
+        debug(err)
+        //const newErr = this.wrapError(err)
+        //debug(newErr)
+        delete err.stack
+        m.respond(this.jsonCodec.encode(err))
       }
     }
     return sub

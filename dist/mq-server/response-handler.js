@@ -22,7 +22,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const nats_1 = require("nats");
 const errors_1 = require("@feathersjs/errors");
 const debug_1 = __importDefault(require("debug"));
-const debug = (0, debug_1.default)("feathers-nats-distributed:server:responses:index");
+const debug = (0, debug_1.default)("feathers-nats-distributed:server:response-handler");
 class natsResponse {
     constructor(app, appName, nats) {
         this.jsonCodec = (0, nats_1.JSONCodec)();
@@ -75,13 +75,13 @@ class natsResponse {
                         const m = _c;
                         const svcInfo = this.getServiceName(m.subject);
                         if (!this.Services.includes(svcInfo.serviceName)) {
-                            const errorResponse = new errors_1.NotFound();
+                            const errorResponse = new errors_1.NotFound(`Service \`${svcInfo.serviceName}\` is not registered in this server.`);
                             debug("error response %O", errorResponse);
                             if (m.respond(this.jsonCodec.encode(errorResponse))) {
-                                console.log(`[${this.appName}] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`);
+                                console.log(`[${svcInfo.serverName}] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`);
                             }
                             else {
-                                console.log(`[${this.appName}] #${sub.getProcessed()} ignoring request - no reply subject`);
+                                console.log(`[${svcInfo.serverName}] #${sub.getProcessed()} ignoring request - no reply subject`);
                             }
                             continue;
                         }
@@ -90,10 +90,10 @@ class natsResponse {
                             const errorResponse = new errors_1.MethodNotAllowed(`Method \`${svcInfo.methodName}\` is not supported by this endpoint.`);
                             debug("error response %O", errorResponse);
                             if (m.respond(this.jsonCodec.encode(errorResponse))) {
-                                console.log(`[${this.appName}] #${sub.getProcessed()} echoed ${this.jsonCodec.decode(m.data)}`);
+                                console.log(`[${svcInfo.serverName}] #${sub.getProcessed()} echoed ${this.jsonCodec.decode(m.data)}`);
                             }
                             else {
-                                console.log(`[${this.appName}] #${sub.getProcessed()} ignoring request - no reply subject`);
+                                console.log(`[${svcInfo.serverName}] #${sub.getProcessed()} ignoring request - no reply subject`);
                             }
                             continue;
                         }
@@ -140,7 +140,9 @@ class natsResponse {
                         }
                         catch (err) {
                             delete err.hook;
-                            m.respond(this.jsonCodec.encode(this.wrapError(err)));
+                            debug(err);
+                            delete err.stack;
+                            m.respond(this.jsonCodec.encode(err));
                         }
                     }
                     finally {
