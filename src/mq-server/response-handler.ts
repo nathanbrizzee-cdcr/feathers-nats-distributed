@@ -143,11 +143,10 @@ export default class natsResponse {
         continue
       }
 
-      const request: any = this.jsonCodec.decode(m.data)
-      debug({ svcInfo, request })
-
       let result: any
       try {
+        const request: any = this.jsonCodec.decode(m.data)
+        debug({ svcInfo, request })
         switch (serviceType) {
           case "find":
             result = await this.app

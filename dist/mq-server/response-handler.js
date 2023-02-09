@@ -97,10 +97,10 @@ class natsResponse {
                             }
                             continue;
                         }
-                        const request = this.jsonCodec.decode(m.data);
-                        debug({ svcInfo, request });
                         let result;
                         try {
+                            const request = this.jsonCodec.decode(m.data);
+                            debug({ svcInfo, request });
                             switch (serviceType) {
                                 case "find":
                                     result = yield this.app
