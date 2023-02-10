@@ -29,6 +29,8 @@ const getInstance = function (natsConfig = {}) {
                 debug("Connecting to NATS with connection", conn);
                 try {
                     instance = yield (0, nats_1.connect)(conn);
+                    const info = instance.info;
+                    debug("NATS server info", info);
                 }
                 catch (err) {
                     debug(err);

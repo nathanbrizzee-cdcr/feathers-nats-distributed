@@ -22,7 +22,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const nats_1 = require("nats");
 const errors_1 = require("@feathersjs/errors");
 const debug_1 = __importDefault(require("debug"));
-const debug = (0, debug_1.default)("feathers-nats-distributed:mq-server:response-handler");
+const debug = (0, debug_1.default)("feathers-nats-distributed:server:response-handler");
 class natsResponse {
     constructor(app, appName, nats) {
         this.jsonCodec = (0, nats_1.JSONCodec)();
@@ -46,7 +46,6 @@ class natsResponse {
         if (subjectParts.length > 2) {
             serviceActions.serviceName = subjectParts.slice(2).join("/");
         }
-        debug(`service request for app=${serviceActions.serverName}; method=${serviceActions.methodName}; service=${serviceActions.serviceName};`);
         return serviceActions;
     }
     wrapError(error) {
@@ -84,7 +83,7 @@ class natsResponse {
                             }
                             let result;
                             const request = this.jsonCodec.decode(m.data);
-                            debug({ svcInfo, request });
+                            debug(JSON.stringify({ svcInfo, request }, null, 2));
                             switch (serviceType) {
                                 case "find":
                                     result = yield this.app
@@ -120,7 +119,12 @@ class natsResponse {
                                     result = {};
                                     break;
                             }
-                            const retal = m.respond(this.jsonCodec.encode(result));
+                            if (m.respond(this.jsonCodec.encode(result))) {
+                                debug(`[${this.appName}] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`);
+                            }
+                            else {
+                                debug(`[${this.appName}] #${sub.getProcessed()} ignoring request - no reply subject`);
+                            }
                         }
                         catch (err) {
                             delete err.hook;

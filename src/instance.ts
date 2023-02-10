@@ -26,6 +26,8 @@ const getInstance = async function (
       debug("Connecting to NATS with connection", conn)
       try {
         instance = await connect(conn)
+        const info = instance.info
+        debug("NATS server info", info)
       } catch (err) {
         debug(err)
         throw new BadRequest("NATS connection exited because of error:", err)

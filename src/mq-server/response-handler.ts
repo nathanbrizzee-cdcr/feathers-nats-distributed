@@ -9,7 +9,7 @@ import {
 } from "nats"
 import { NotFound, MethodNotAllowed, BadRequest } from "@feathersjs/errors"
 import Debug from "debug"
-const debug = Debug("feathers-nats-distributed:mq-server:response-handler")
+const debug = Debug("feathers-nats-distributed:server:response-handler")
 
 type ServiceActions = {
   serverName: string
@@ -49,10 +49,6 @@ export default class natsResponse {
     if (subjectParts.length > 2) {
       serviceActions.serviceName = subjectParts.slice(2).join("/")
     }
-
-    debug(
-      `service request for app=${serviceActions.serverName}; method=${serviceActions.methodName}; service=${serviceActions.serviceName};`
-    )
     return serviceActions
   }
   // {
@@ -116,7 +112,7 @@ export default class natsResponse {
 
         let result: any
         const request: any = this.jsonCodec.decode(m.data)
-        debug({ svcInfo, request })
+        debug(JSON.stringify({ svcInfo, request }, null, 2))
         switch (serviceType) {
           case "find":
             result = await this.app
@@ -155,7 +151,19 @@ export default class natsResponse {
         }
 
         // respond returns true if the message had a reply subject, thus it could respond
-        const retal = m.respond(this.jsonCodec.encode(result))
+        if (m.respond(this.jsonCodec.encode(result))) {
+          debug(
+            `[${
+              this.appName
+            }] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`
+          )
+        } else {
+          debug(
+            `[${
+              this.appName
+            }] #${sub.getProcessed()} ignoring request - no reply subject`
+          )
+        }
       } catch (err: any) {
         delete err.hook
         debug(err)
