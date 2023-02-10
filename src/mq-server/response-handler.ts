@@ -51,21 +51,6 @@ export default class natsResponse {
     }
     return serviceActions
   }
-  // {
-  //   "stack":"NotFound: No record found for id '1' at UserService._get (/home/vagrant/code/feathers5/feathers-chat/node_modules/@feathersjs/knex/lib/adapter.js:169:19)  at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async UserService.<anonymous> (/home/vagrant/code/feathers5/feathers-chat/node_modules/@feathersjs/schema/lib/hooks/resolve.js:81:13)\n    at async UserService.<anonymous> (/home/vagrant/code/feathers5/feathers-chat/node_modules/@feathersjs/schema/lib/hooks/resolve.js:124:9)\n    at async UserService.logError (/home/vagrant/code/feathers5/feathers-chat/lib/hooks/log-error.js:7:9)",
-  //   "message":"No record found for id '1'",
-  //   "name":"NotFound",
-  //   "code":404,
-  //   "className":"not-found",
-  //   "type":"FeathersError",
-  //   "__mqError":{
-  //     "stack":"NotFound: No record found for id '1'\n    at UserService._get (/home/vagrant/code/feathers5/feathers-chat/node_modules/@feathersjs/knex/lib/adapter.js:169:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async UserService.<anonymous> (/home/vagrant/code/feathers5/feathers-chat/node_modules/@feathersjs/schema/lib/hooks/resolve.js:81:13)\n    at async UserService.<anonymous> (/home/vagrant/code/feathers5/feathers-chat/node_modules/@feathersjs/schema/lib/hooks/resolve.js:124:9)\n    at async UserService.logError (/home/vagrant/code/feathers5/feathers-chat/lib/hooks/log-error.js:7:9)",
-  //     "message":"No record found for id '1'",
-  //     "name":"NotFound",
-  //     "code":404,
-  //     "className":"not-found",
-  //     "type":"FeathersError"}
-  //   }
 
   private wrapError(error: any) {
     const newError: StringMap = {}
@@ -89,110 +74,116 @@ export default class natsResponse {
     // create a subscription - note the option for a queue, if set
     // any client with the same queue will be a member of the group.
     const sub = this.nats.subscribe(<string>queueOpts.queue, queueOpts)
-    for await (const m of sub) {
-      try {
-        const svcInfo = this.getServiceName(m.subject)
+    ;(async () => {
+      for await (const m of sub) {
+        try {
+          const svcInfo = this.getServiceName(m.subject)
 
-        // check if service is registered
-        if (!this.Services.includes(svcInfo.serviceName)) {
-          throw new NotFound(
-            `Service \`${svcInfo.serviceName}\` is not registered in this server.`
+          // check if service is registered
+          if (!this.Services.includes(svcInfo.serviceName)) {
+            throw new NotFound(
+              `Service \`${svcInfo.serviceName}\` is not registered in this server.`
+            )
+          }
+
+          const availableMethods = Object.keys(
+            this.app.services[svcInfo.serviceName]
           )
-        }
+          // check if the 'service method' is registered
+          if (!availableMethods.includes(svcInfo.methodName)) {
+            throw new MethodNotAllowed(
+              `Method \`${svcInfo.methodName}\` is not supported by this endpoint.`
+            )
+          }
 
-        const availableMethods = Object.keys(
-          this.app.services[svcInfo.serviceName]
-        )
-        // check if the 'service method' is registered
-        if (!availableMethods.includes(svcInfo.methodName)) {
-          throw new MethodNotAllowed(
-            `Method \`${svcInfo.methodName}\` is not supported by this endpoint.`
-          )
-        }
+          let result: any
+          const request: any = this.jsonCodec.decode(m.data)
+          debug(JSON.stringify({ svcInfo, request }, null, 2))
+          switch (serviceType) {
+            case "find":
+              result = await this.app
+                .service(svcInfo.serviceName)
+                .find(request.params)
+              break
 
-        let result: any
-        const request: any = this.jsonCodec.decode(m.data)
-        debug(JSON.stringify({ svcInfo, request }, null, 2))
-        switch (serviceType) {
-          case "find":
-            result = await this.app
-              .service(svcInfo.serviceName)
-              .find(request.params)
-            break
+            case "get":
+              result = await this.app
+                .service(svcInfo.serviceName)
+                .get(request.id, request.params)
+              break
+            case "create":
+              result = await this.app
+                .service(svcInfo.serviceName)
+                .create(request.data, request.params)
+              break
+            case "patch":
+              result = await this.app
+                .service(svcInfo.serviceName)
+                .patch(request.id, request.data, request.params)
+              break
+            case "update":
+              result = await this.app
+                .service(svcInfo.serviceName)
+                .update(request.id, request.data, request.params)
+              break
+            case "remove":
+              result = await this.app
+                .service(svcInfo.serviceName)
+                .remove(request.id, request.params)
+              break
+            default:
+              result = {}
+              break
+          }
 
-          case "get":
-            result = await this.app
-              .service(svcInfo.serviceName)
-              .get(request.id, request.params)
-            break
-          case "create":
-            result = await this.app
-              .service(svcInfo.serviceName)
-              .create(request.data, request.params)
-            break
-          case "patch":
-            result = await this.app
-              .service(svcInfo.serviceName)
-              .patch(request.id, request.data, request.params)
-            break
-          case "update":
-            result = await this.app
-              .service(svcInfo.serviceName)
-              .update(request.id, request.data, request.params)
-            break
-          case "remove":
-            result = await this.app
-              .service(svcInfo.serviceName)
-              .remove(request.id, request.params)
-            break
-          default:
-            result = {}
-            break
-        }
-
-        // respond returns true if the message had a reply subject, thus it could respond
-        if (m.respond(this.jsonCodec.encode(result))) {
-          debug(
-            `[${
-              this.appName
-            }] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`
-          )
-        } else {
-          debug(
-            `[${
-              this.appName
-            }] #${sub.getProcessed()} ignoring request - no reply subject`
-          )
-        }
-      } catch (err: any) {
-        delete err.hook
-        debug(err)
-        //const newErr = this.wrapError(err)
-        //debug(newErr)
-        delete err.stack
-        if (
-          err.code &&
-          typeof err.code === "string" &&
-          err.code === "BAD_JSON"
-        ) {
-          err = new BadRequest("Invalid JSON request received")
+          const reply = { data: result }
+          // respond returns true if the message had a reply subject, thus it could respond
+          if (m.respond(this.jsonCodec.encode(reply))) {
+            debug(
+              `[${
+                this.appName
+              }] reply #${sub.getProcessed()} => ${JSON.stringify(reply)}`
+            )
+          } else {
+            debug(
+              `[${
+                this.appName
+              }] #${sub.getProcessed()} ignoring request - no reply subject`
+            )
+          }
+        } catch (err: any) {
+          delete err.hook
           debug(err)
-        }
-        if (m.respond(this.jsonCodec.encode(err))) {
-          debug(
-            `[${
-              this.appName
-            }] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`
-          )
-        } else {
-          debug(
-            `[${
-              this.appName
-            }] #${sub.getProcessed()} ignoring request - no reply subject`
-          )
+          //const newErr = this.wrapError(err)
+          //debug(newErr)
+          delete err.stack
+          if (
+            err.code &&
+            typeof err.code === "string" &&
+            err.code === "BAD_JSON"
+          ) {
+            err = new BadRequest("Invalid JSON request received")
+            debug(err)
+          }
+          const errObj = { error: err }
+          if (m.respond(this.jsonCodec.encode(errObj))) {
+            debug(
+              `[${
+                this.appName
+              }] reply #${sub.getProcessed()} => ${JSON.stringify(errObj)}`
+            )
+          } else {
+            debug(
+              `[${
+                this.appName
+              }] #${sub.getProcessed()} ignoring request - no reply subject`
+            )
+          }
         }
       }
-    }
+      console.log("subscription closed")
+    })()
+
     return sub
   }
 }

@@ -59,103 +59,108 @@ class natsResponse {
         return newError;
     }
     createService(serviceType) {
-        var _a, e_1, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const queueOpts = {
                 queue: `${this.appName}.${serviceType}.>`,
             };
             debug("Creating subscription queue on ", queueOpts);
             const sub = this.nats.subscribe(queueOpts.queue, queueOpts);
-            try {
-                for (var _d = true, sub_1 = __asyncValues(sub), sub_1_1; sub_1_1 = yield sub_1.next(), _a = sub_1_1.done, !_a;) {
-                    _c = sub_1_1.value;
-                    _d = false;
-                    try {
-                        const m = _c;
-                        try {
-                            const svcInfo = this.getServiceName(m.subject);
-                            if (!this.Services.includes(svcInfo.serviceName)) {
-                                throw new errors_1.NotFound(`Service \`${svcInfo.serviceName}\` is not registered in this server.`);
-                            }
-                            const availableMethods = Object.keys(this.app.services[svcInfo.serviceName]);
-                            if (!availableMethods.includes(svcInfo.methodName)) {
-                                throw new errors_1.MethodNotAllowed(`Method \`${svcInfo.methodName}\` is not supported by this endpoint.`);
-                            }
-                            let result;
-                            const request = this.jsonCodec.decode(m.data);
-                            debug(JSON.stringify({ svcInfo, request }, null, 2));
-                            switch (serviceType) {
-                                case "find":
-                                    result = yield this.app
-                                        .service(svcInfo.serviceName)
-                                        .find(request.params);
-                                    break;
-                                case "get":
-                                    result = yield this.app
-                                        .service(svcInfo.serviceName)
-                                        .get(request.id, request.params);
-                                    break;
-                                case "create":
-                                    result = yield this.app
-                                        .service(svcInfo.serviceName)
-                                        .create(request.data, request.params);
-                                    break;
-                                case "patch":
-                                    result = yield this.app
-                                        .service(svcInfo.serviceName)
-                                        .patch(request.id, request.data, request.params);
-                                    break;
-                                case "update":
-                                    result = yield this.app
-                                        .service(svcInfo.serviceName)
-                                        .update(request.id, request.data, request.params);
-                                    break;
-                                case "remove":
-                                    result = yield this.app
-                                        .service(svcInfo.serviceName)
-                                        .remove(request.id, request.params);
-                                    break;
-                                default:
-                                    result = {};
-                                    break;
-                            }
-                            if (m.respond(this.jsonCodec.encode(result))) {
-                                debug(`[${this.appName}] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`);
-                            }
-                            else {
-                                debug(`[${this.appName}] #${sub.getProcessed()} ignoring request - no reply subject`);
-                            }
-                        }
-                        catch (err) {
-                            delete err.hook;
-                            debug(err);
-                            delete err.stack;
-                            if (err.code &&
-                                typeof err.code === "string" &&
-                                err.code === "BAD_JSON") {
-                                err = new errors_1.BadRequest("Invalid JSON request received");
-                                debug(err);
-                            }
-                            if (m.respond(this.jsonCodec.encode(err))) {
-                                debug(`[${this.appName}] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`);
-                            }
-                            else {
-                                debug(`[${this.appName}] #${sub.getProcessed()} ignoring request - no reply subject`);
-                            }
-                        }
-                    }
-                    finally {
-                        _d = true;
-                    }
-                }
-            }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
-            finally {
+            (() => __awaiter(this, void 0, void 0, function* () {
+                var _a, e_1, _b, _c;
                 try {
-                    if (!_d && !_a && (_b = sub_1.return)) yield _b.call(sub_1);
+                    for (var _d = true, sub_1 = __asyncValues(sub), sub_1_1; sub_1_1 = yield sub_1.next(), _a = sub_1_1.done, !_a;) {
+                        _c = sub_1_1.value;
+                        _d = false;
+                        try {
+                            const m = _c;
+                            try {
+                                const svcInfo = this.getServiceName(m.subject);
+                                if (!this.Services.includes(svcInfo.serviceName)) {
+                                    throw new errors_1.NotFound(`Service \`${svcInfo.serviceName}\` is not registered in this server.`);
+                                }
+                                const availableMethods = Object.keys(this.app.services[svcInfo.serviceName]);
+                                if (!availableMethods.includes(svcInfo.methodName)) {
+                                    throw new errors_1.MethodNotAllowed(`Method \`${svcInfo.methodName}\` is not supported by this endpoint.`);
+                                }
+                                let result;
+                                const request = this.jsonCodec.decode(m.data);
+                                debug(JSON.stringify({ svcInfo, request }, null, 2));
+                                switch (serviceType) {
+                                    case "find":
+                                        result = yield this.app
+                                            .service(svcInfo.serviceName)
+                                            .find(request.params);
+                                        break;
+                                    case "get":
+                                        result = yield this.app
+                                            .service(svcInfo.serviceName)
+                                            .get(request.id, request.params);
+                                        break;
+                                    case "create":
+                                        result = yield this.app
+                                            .service(svcInfo.serviceName)
+                                            .create(request.data, request.params);
+                                        break;
+                                    case "patch":
+                                        result = yield this.app
+                                            .service(svcInfo.serviceName)
+                                            .patch(request.id, request.data, request.params);
+                                        break;
+                                    case "update":
+                                        result = yield this.app
+                                            .service(svcInfo.serviceName)
+                                            .update(request.id, request.data, request.params);
+                                        break;
+                                    case "remove":
+                                        result = yield this.app
+                                            .service(svcInfo.serviceName)
+                                            .remove(request.id, request.params);
+                                        break;
+                                    default:
+                                        result = {};
+                                        break;
+                                }
+                                const reply = { data: result };
+                                if (m.respond(this.jsonCodec.encode(reply))) {
+                                    debug(`[${this.appName}] reply #${sub.getProcessed()} => ${JSON.stringify(reply)}`);
+                                }
+                                else {
+                                    debug(`[${this.appName}] #${sub.getProcessed()} ignoring request - no reply subject`);
+                                }
+                            }
+                            catch (err) {
+                                delete err.hook;
+                                debug(err);
+                                delete err.stack;
+                                if (err.code &&
+                                    typeof err.code === "string" &&
+                                    err.code === "BAD_JSON") {
+                                    err = new errors_1.BadRequest("Invalid JSON request received");
+                                    debug(err);
+                                }
+                                const errObj = { error: err };
+                                if (m.respond(this.jsonCodec.encode(errObj))) {
+                                    debug(`[${this.appName}] reply #${sub.getProcessed()} => ${JSON.stringify(errObj)}`);
+                                }
+                                else {
+                                    debug(`[${this.appName}] #${sub.getProcessed()} ignoring request - no reply subject`);
+                                }
+                            }
+                        }
+                        finally {
+                            _d = true;
+                        }
+                    }
                 }
-                finally { if (e_1) throw e_1.error; }
-            }
+                catch (e_1_1) { e_1 = { error: e_1_1 }; }
+                finally {
+                    try {
+                        if (!_d && !_a && (_b = sub_1.return)) yield _b.call(sub_1);
+                    }
+                    finally { if (e_1) throw e_1.error; }
+                }
+                console.log("subscription closed");
+            }))();
             return sub;
         });
     }

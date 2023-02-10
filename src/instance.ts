@@ -1,7 +1,13 @@
-import { BadRequest } from "@feathersjs/errors/lib"
+import { GeneralError } from "@feathersjs/errors/lib"
 import Debug from "debug"
 const debug = Debug("feathers-nats-distributed:instance")
-import { connect, NatsConnection, ConnectionOptions } from "nats"
+import {
+  connect,
+  NatsConnection,
+  ConnectionOptions,
+  Status,
+  Events,
+} from "nats"
 
 let instance: NatsConnection
 
@@ -23,59 +29,54 @@ const getInstance = async function (
   )
   if (!instance || instance.isClosed()) {
     try {
-      debug("Connecting to NATS with connection", conn)
+      debug("Connecting to NATS with ", conn)
       try {
         instance = await connect(conn)
-        const info = instance.info
-        debug("NATS server info", info)
+        debug("NATS server info:", instance.info)
       } catch (err) {
+        // @ts-expect-error
+        instance = null
         debug(err)
-        throw new BadRequest("NATS connection exited because of error:", err)
+        throw new GeneralError("NATS connection exited because of error:", err)
       }
+
+      // This is only called if the application calls close on the connection
+      // If the connection closes due to the server going away, this is not called
       instance.closed().then(err => {
         if (err) {
-          console.error(
-            `NATS connection exited because of error: ${err.message}`
-          )
-          throw new BadRequest(
+          debug(`NATS connection exited because of error: ${err.message}`)
+          throw new GeneralError(
             "NATS connection exited because of error:",
             err.message
           )
+        } else {
+          debug("NATS connection closed")
+          throw new GeneralError("NATS connection closed")
         }
       })
+      // Monitor the NATS instance for status changes
+      ;(async () => {
+        for await (const s of instance.status()) {
+          debug(`NATS instance status change ${JSON.stringify(s, null, 2)}`)
+          // Not positive we want to throw an error when the NATS server gets an error
+          // Not sure if that means the server is no longer able to respond or if we can
+          // keep talking to it.
+          // If we die, then all servers could die at once causing a massive outage.
+          // if (s.type === Events.Error) {
+          //   throw new GeneralError("NATS server encountered an error", s)
+          // }
+        }
+        debug("NATS status monitoring closed")
+      })()
 
-      // // @ts-expect-error
-      // instance.on("connect", () => {
-      //   debug("Connected to NATS as Server")
-      // })
-
-      // // @ts-expect-error
-      // instance.on("error", err => {
-      //   debug("nats connection errored", err)
-      // })
-
-      // // @ts-expect-error
-      // instance.on("disconnect", () => {
-      //   debug("nats connection disconnected")
-      // })
-
-      // // @ts-expect-error
-      // instance.on("close", () => {
-      //   debug("nats connection closed")
-      // })
-
-      // // @ts-expect-error
-      // instance.on("timeout", () => {
-      //   debug("nats connection timeout")
-      // })
-
-      debug("Connected to NATS server")
       return instance
     } catch (e) {
+      debug("Unable to connect to NATS")
+      debug(e)
       throw e
     }
   }
-  debug("returning NATS instance")
+
   return instance
 }
 
