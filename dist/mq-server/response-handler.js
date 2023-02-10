@@ -22,7 +22,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const nats_1 = require("nats");
 const errors_1 = require("@feathersjs/errors");
 const debug_1 = __importDefault(require("debug"));
-const debug = (0, debug_1.default)("feathers-nats-distributed:server:response-handler");
+const debug = (0, debug_1.default)("feathers-nats-distributed:mq-server:response-handler");
 class natsResponse {
     constructor(app, appName, nats) {
         this.jsonCodec = (0, nats_1.JSONCodec)();
@@ -73,32 +73,16 @@ class natsResponse {
                     _d = false;
                     try {
                         const m = _c;
-                        const svcInfo = this.getServiceName(m.subject);
-                        if (!this.Services.includes(svcInfo.serviceName)) {
-                            const errorResponse = new errors_1.NotFound(`Service \`${svcInfo.serviceName}\` is not registered in this server.`);
-                            debug("error response %O", errorResponse);
-                            if (m.respond(this.jsonCodec.encode(errorResponse))) {
-                                console.log(`[${svcInfo.serverName}] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`);
-                            }
-                            else {
-                                console.log(`[${svcInfo.serverName}] #${sub.getProcessed()} ignoring request - no reply subject`);
-                            }
-                            continue;
-                        }
-                        const availableMethods = Object.keys(this.app.services[svcInfo.serviceName]);
-                        if (!availableMethods.includes(svcInfo.methodName)) {
-                            const errorResponse = new errors_1.MethodNotAllowed(`Method \`${svcInfo.methodName}\` is not supported by this endpoint.`);
-                            debug("error response %O", errorResponse);
-                            if (m.respond(this.jsonCodec.encode(errorResponse))) {
-                                console.log(`[${svcInfo.serverName}] #${sub.getProcessed()} echoed ${this.jsonCodec.decode(m.data)}`);
-                            }
-                            else {
-                                console.log(`[${svcInfo.serverName}] #${sub.getProcessed()} ignoring request - no reply subject`);
-                            }
-                            continue;
-                        }
-                        let result;
                         try {
+                            const svcInfo = this.getServiceName(m.subject);
+                            if (!this.Services.includes(svcInfo.serviceName)) {
+                                throw new errors_1.NotFound(`Service \`${svcInfo.serviceName}\` is not registered in this server.`);
+                            }
+                            const availableMethods = Object.keys(this.app.services[svcInfo.serviceName]);
+                            if (!availableMethods.includes(svcInfo.methodName)) {
+                                throw new errors_1.MethodNotAllowed(`Method \`${svcInfo.methodName}\` is not supported by this endpoint.`);
+                            }
+                            let result;
                             const request = this.jsonCodec.decode(m.data);
                             debug({ svcInfo, request });
                             switch (serviceType) {
@@ -142,7 +126,18 @@ class natsResponse {
                             delete err.hook;
                             debug(err);
                             delete err.stack;
-                            m.respond(this.jsonCodec.encode(err));
+                            if (err.code &&
+                                typeof err.code === "string" &&
+                                err.code === "BAD_JSON") {
+                                err = new errors_1.BadRequest("Invalid JSON request received");
+                                debug(err);
+                            }
+                            if (m.respond(this.jsonCodec.encode(err))) {
+                                debug(`[${this.appName}] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`);
+                            }
+                            else {
+                                debug(`[${this.appName}] #${sub.getProcessed()} ignoring request - no reply subject`);
+                            }
                         }
                     }
                     finally {

@@ -7,9 +7,9 @@ import {
   Subscription,
   SubscriptionOptions,
 } from "nats"
-import { NotFound, MethodNotAllowed } from "@feathersjs/errors"
+import { NotFound, MethodNotAllowed, BadRequest } from "@feathersjs/errors"
 import Debug from "debug"
-const debug = Debug("feathers-nats-distributed:server:response-handler")
+const debug = Debug("feathers-nats-distributed:mq-server:response-handler")
 
 type ServiceActions = {
   serverName: string
@@ -94,57 +94,27 @@ export default class natsResponse {
     // any client with the same queue will be a member of the group.
     const sub = this.nats.subscribe(<string>queueOpts.queue, queueOpts)
     for await (const m of sub) {
-      const svcInfo = this.getServiceName(m.subject)
-
-      // check if service is registered
-      if (!this.Services.includes(svcInfo.serviceName)) {
-        const errorResponse = new NotFound(
-          `Service \`${svcInfo.serviceName}\` is not registered in this server.`
-        )
-        debug("error response %O", errorResponse)
-        if (m.respond(this.jsonCodec.encode(errorResponse))) {
-          console.log(
-            `[${
-              svcInfo.serverName
-            }] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`
-          )
-        } else {
-          console.log(
-            `[${
-              svcInfo.serverName
-            }] #${sub.getProcessed()} ignoring request - no reply subject`
-          )
-        }
-        continue
-      }
-
-      const availableMethods = Object.keys(
-        this.app.services[svcInfo.serviceName]
-      )
-      // check if the 'service method' is registered
-      if (!availableMethods.includes(svcInfo.methodName)) {
-        const errorResponse = new MethodNotAllowed(
-          `Method \`${svcInfo.methodName}\` is not supported by this endpoint.`
-        )
-        debug("error response %O", errorResponse)
-        if (m.respond(this.jsonCodec.encode(errorResponse))) {
-          console.log(
-            `[${
-              svcInfo.serverName
-            }] #${sub.getProcessed()} echoed ${this.jsonCodec.decode(m.data)}`
-          )
-        } else {
-          console.log(
-            `[${
-              svcInfo.serverName
-            }] #${sub.getProcessed()} ignoring request - no reply subject`
-          )
-        }
-        continue
-      }
-
-      let result: any
       try {
+        const svcInfo = this.getServiceName(m.subject)
+
+        // check if service is registered
+        if (!this.Services.includes(svcInfo.serviceName)) {
+          throw new NotFound(
+            `Service \`${svcInfo.serviceName}\` is not registered in this server.`
+          )
+        }
+
+        const availableMethods = Object.keys(
+          this.app.services[svcInfo.serviceName]
+        )
+        // check if the 'service method' is registered
+        if (!availableMethods.includes(svcInfo.methodName)) {
+          throw new MethodNotAllowed(
+            `Method \`${svcInfo.methodName}\` is not supported by this endpoint.`
+          )
+        }
+
+        let result: any
         const request: any = this.jsonCodec.decode(m.data)
         debug({ svcInfo, request })
         switch (serviceType) {
@@ -192,7 +162,27 @@ export default class natsResponse {
         //const newErr = this.wrapError(err)
         //debug(newErr)
         delete err.stack
-        m.respond(this.jsonCodec.encode(err))
+        if (
+          err.code &&
+          typeof err.code === "string" &&
+          err.code === "BAD_JSON"
+        ) {
+          err = new BadRequest("Invalid JSON request received")
+          debug(err)
+        }
+        if (m.respond(this.jsonCodec.encode(err))) {
+          debug(
+            `[${
+              this.appName
+            }] #${sub.getProcessed()} echoed ${this.stringCodec.decode(m.data)}`
+          )
+        } else {
+          debug(
+            `[${
+              this.appName
+            }] #${sub.getProcessed()} ignoring request - no reply subject`
+          )
+        }
       }
     }
     return sub

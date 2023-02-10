@@ -1,5 +1,5 @@
 import Debug from "debug"
-const debug = Debug("feathers-nats-distributed:server:index")
+const debug = Debug("feathers-nats-distributed:mq-server:index")
 import { BadRequest } from "@feathersjs/errors"
 import { getInstance, NatsConnection, ConnectionOptions } from "../instance"
 
