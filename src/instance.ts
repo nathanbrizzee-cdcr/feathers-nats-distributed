@@ -5,9 +5,14 @@ import {
   connect,
   NatsConnection,
   ConnectionOptions,
-  Status,
-  Events,
+  Codec,
+  JSONCodec,
+  StringCodec,
 } from "nats"
+import { InitConfig, ServiceActions } from "./common/types"
+
+const jsonCodec: Codec<unknown> = JSONCodec()
+const stringCodec: Codec<string> = StringCodec()
 
 let instance: NatsConnection
 
@@ -95,4 +100,13 @@ const closeInstance = async function (): Promise<void> {
   debug("NATS connection closed")
 }
 
-export { getInstance, closeInstance, NatsConnection, ConnectionOptions }
+export {
+  jsonCodec,
+  stringCodec,
+  getInstance,
+  closeInstance,
+  NatsConnection,
+  ConnectionOptions,
+  InitConfig,
+  ServiceActions,
+}

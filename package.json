@@ -28,12 +28,13 @@
     "node": ">= 16.0.0"
   },
   "dependencies": {
+    "@feathersjs/adapter-commons": "^5.0.0-pre.36",
     "@feathersjs/errors": "^5.0.0-pre.36",
+    "@feathersjs/feathers": "^5.0.0-pre.36",
     "debug": "^4.3.4",
     "nats": "^2.11.0"
   },
   "devDependencies": {
-    "@feathersjs/feathers": "^5.0.0-pre.36",
     "@types/debug": "~4.1.7",
     "@types/node": "^18.13.0",
     "eslint": "^8.33.0",

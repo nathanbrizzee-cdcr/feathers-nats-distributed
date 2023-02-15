@@ -8,22 +8,14 @@ import {
   SubscriptionOptions,
 } from "nats"
 import { NotFound, MethodNotAllowed, BadRequest } from "@feathersjs/errors"
+import { getServiceName } from "../common/helpers"
+import { ServiceMethods } from "../common/types"
+import { jsonCodec } from "../instance"
 import Debug from "debug"
 const debug = Debug("feathers-nats-distributed:server:response-handler")
-
-type ServiceActions = {
-  serverName: string
-  serviceName: string
-  methodName: string
-}
-
-type StringMap = { [key: string]: string }
-
 export default class natsResponse {
   private app: any // FeathersJS app object
   private nats: NatsConnection
-  private jsonCodec: Codec<unknown> = JSONCodec()
-  private stringCodec: Codec<string> = StringCodec()
   private appName: string
   private Services: string[]
 
@@ -34,50 +26,25 @@ export default class natsResponse {
     this.Services = Object.keys(app.services)
   }
 
-  private getServiceName(natsSubject: string): ServiceActions {
-    // natsSubject should look like this "ServerName.get.users"
-    const subjectParts: string[] = natsSubject.split(".")
-    const serviceActions: ServiceActions = {
-      serverName: "",
-      serviceName: "",
-      methodName: "",
-    }
-    serviceActions.serverName = subjectParts[0]
-    if (subjectParts.length > 1) {
-      serviceActions.methodName = subjectParts[1]
-    }
-    if (subjectParts.length > 2) {
-      serviceActions.serviceName = subjectParts.slice(2).join("/")
-    }
-    return serviceActions
-  }
-
-  private wrapError(error: any) {
-    const newError: StringMap = {}
-    const __mqError: StringMap = {}
-
-    Object.getOwnPropertyNames(error).forEach(key => {
-      newError[key] = error[key] // For older versions
-      __mqError[key] = error[key]
-    })
-
-    //@ts-expect-error
-    newError.__mqError = __mqError
-    return newError
-  }
-
-  public async createService(serviceType: string): Promise<Subscription> {
+  /**
+   *
+   * @param serviceMethod One of
+   * @returns
+   */
+  public async createService(
+    serviceMethod: ServiceMethods
+  ): Promise<Subscription> {
     const queueOpts: SubscriptionOptions = {
-      queue: `${this.appName}.${serviceType}.>`,
+      queue: `service.${this.appName}.${serviceMethod}.>`,
     }
-    debug("Creating subscription queue on ", queueOpts)
+    debug("Creating service subscription queue on ", queueOpts.queue)
     // create a subscription - note the option for a queue, if set
-    // any client with the same queue will be a member of the group.
+    // any client with the same queue will be a member of the receiving group.
     const sub = this.nats.subscribe(<string>queueOpts.queue, queueOpts)
     ;(async () => {
       for await (const m of sub) {
         try {
-          const svcInfo = this.getServiceName(m.subject)
+          const svcInfo = getServiceName(m.subject)
 
           // check if service is registered
           if (!this.Services.includes(svcInfo.serviceName)) {
@@ -97,36 +64,36 @@ export default class natsResponse {
           }
 
           let result: any
-          const request: any = this.jsonCodec.decode(m.data)
+          const request: any = jsonCodec.decode(m.data)
           debug(JSON.stringify({ svcInfo, request }, null, 2))
-          switch (serviceType) {
-            case "find":
+          switch (serviceMethod) {
+            case ServiceMethods.Find:
               result = await this.app
                 .service(svcInfo.serviceName)
                 .find(request.params)
               break
 
-            case "get":
+            case ServiceMethods.Get:
               result = await this.app
                 .service(svcInfo.serviceName)
                 .get(request.id, request.params)
               break
-            case "create":
+            case ServiceMethods.Create:
               result = await this.app
                 .service(svcInfo.serviceName)
                 .create(request.data, request.params)
               break
-            case "patch":
+            case ServiceMethods.Patch:
               result = await this.app
                 .service(svcInfo.serviceName)
                 .patch(request.id, request.data, request.params)
               break
-            case "update":
+            case ServiceMethods.Update:
               result = await this.app
                 .service(svcInfo.serviceName)
                 .update(request.id, request.data, request.params)
               break
-            case "remove":
+            case ServiceMethods.Remove:
               result = await this.app
                 .service(svcInfo.serviceName)
                 .remove(request.id, request.params)
@@ -138,7 +105,7 @@ export default class natsResponse {
 
           const reply = { data: result }
           // respond returns true if the message had a reply subject, thus it could respond
-          if (m.respond(this.jsonCodec.encode(reply))) {
+          if (m.respond(jsonCodec.encode(reply))) {
             debug(
               `[${
                 this.appName
@@ -166,7 +133,7 @@ export default class natsResponse {
             debug(err)
           }
           const errObj = { error: err }
-          if (m.respond(this.jsonCodec.encode(errObj))) {
+          if (m.respond(jsonCodec.encode(errObj))) {
             debug(
               `[${
                 this.appName
