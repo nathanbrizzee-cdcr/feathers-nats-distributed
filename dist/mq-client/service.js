@@ -14,9 +14,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getOptions = exports.NatsService = void 0;
 const debug_1 = __importDefault(require("debug"));
-const debug = (0, debug_1.default)("feathers-mq:client:service");
+const debug = (0, debug_1.default)("feathers-nats-distributed:client:service");
 const types_1 = require("../common/types");
-const sendRequest = require("./send-request");
+const { sendRequest } = require("./send-request");
 class NatsService {
     constructor(app, serviceName, nats, config) {
         this.app = app;
@@ -34,7 +34,8 @@ class NatsService {
                 methodName: types_1.ServiceMethods.Find,
                 request: { params: _params },
             };
-            return sendRequest.call(sendRequestScope);
+            const retval = yield sendRequest(sendRequestScope);
+            return retval.data;
         });
     }
     get(id, _params) {
@@ -47,7 +48,8 @@ class NatsService {
                 methodName: types_1.ServiceMethods.Get,
                 request: { id: id, params: _params },
             };
-            return sendRequest.call(sendRequestScope);
+            const retval = yield sendRequest(sendRequestScope);
+            return retval.data;
         });
     }
     create(data, params) {
@@ -63,7 +65,8 @@ class NatsService {
                 methodName: types_1.ServiceMethods.Create,
                 request: { data: data, params: params },
             };
-            return sendRequest.call(sendRequestScope);
+            const retval = yield sendRequest(sendRequestScope);
+            return retval.data;
         });
     }
     update(id, data, _params) {
@@ -76,7 +79,8 @@ class NatsService {
                 methodName: types_1.ServiceMethods.Update,
                 request: { id: id, data: data, params: _params },
             };
-            return sendRequest.call(sendRequestScope);
+            const retval = yield sendRequest(sendRequestScope);
+            return retval.data;
         });
     }
     patch(id, data, _params) {
@@ -89,7 +93,8 @@ class NatsService {
                 methodName: types_1.ServiceMethods.Patch,
                 request: { id: id, data: data, params: _params },
             };
-            return sendRequest.call(sendRequestScope);
+            const retval = yield sendRequest(sendRequestScope);
+            return retval.data;
         });
     }
     remove(id, _params) {
@@ -102,7 +107,8 @@ class NatsService {
                 methodName: types_1.ServiceMethods.Remove,
                 request: { id: id, params: _params },
             };
-            return sendRequest.call(sendRequestScope);
+            const retval = yield sendRequest(sendRequestScope);
+            return retval.data;
         });
     }
 }

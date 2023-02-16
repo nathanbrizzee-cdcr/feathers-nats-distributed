@@ -10,7 +10,7 @@ const sanitizeAppName = function (appName: string): string {
   // Takes a name like "@mycompany/server.name" and return "mycompany/server-name"
   //const newAppName = appName.split("/").pop()?.replace("@", "") || ""
   const newAppName =
-    appName.replace(/@/g, "").replace(/./g, "-").replace(/>/g, "-") || "" // Replace NATS special characters
+    appName.replace(/@/g, "").replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, "-") || "" // Replace NATS special characters
   return newAppName
 }
 
@@ -37,4 +37,9 @@ const getServiceName = function (natsSubject: string): ServiceActions {
   return serviceActions
 }
 
-export { sanitizeAppName, getServiceName }
+const sanitizeServiceName = function (serviceName: string): string {
+  const newServiceName: string = serviceName.replace(/\//g, ".") || "" // Convert to NATS segments
+  return newServiceName
+}
+
+export { sanitizeAppName, getServiceName, sanitizeServiceName }

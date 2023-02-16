@@ -17,27 +17,33 @@ const debug_1 = __importDefault(require("debug"));
 const debug = (0, debug_1.default)("feathers-nats-distributed:client:index");
 const errors_1 = require("@feathersjs/errors");
 const instance_1 = require("../instance");
+const helpers_1 = require("../common/helpers");
 const service_1 = require("./service");
 let nats;
 const Client = function (config) {
-    return function attachService() {
-        const app = this;
-        function main() {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (!config.appName) {
-                    throw new errors_1.BadRequest("appName (the name of this client) is required ");
-                }
-                nats = yield (0, instance_1.getInstance)(config.natsConfig);
-                app.set("natsInstance", nats);
-                app.defaultService = function (path) {
-                    return new service_1.NatsService(app, path, nats, config);
-                };
-                debug("Finished configuring defaultService");
-            });
+    return (ctx, next) => __awaiter(this, void 0, void 0, function* () {
+        const app = ctx.app;
+        try {
+            if (!config.appName) {
+                throw new errors_1.BadRequest("appName (the name of this client) is required ");
+            }
+            config.appName = (0, helpers_1.sanitizeAppName)(config.appName);
+            nats = yield (0, instance_1.getInstance)(config.natsConfig);
+            app.set("natsInstance", nats);
+            const svc = new service_1.NatsService(app, ctx.path, nats, config);
+            ctx.body = yield svc.find(ctx.query);
+            yield next();
         }
-        main();
-        return this;
-    };
+        catch (error) {
+            ctx.response.status = error instanceof errors_1.FeathersError ? error.code : 500;
+            ctx.body =
+                typeof error.toJSON === "function"
+                    ? error.toJSON()
+                    : {
+                        message: error.message,
+                    };
+        }
+    });
 };
 exports.Client = Client;
 //# sourceMappingURL=index.js.map

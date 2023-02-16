@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getServiceName = exports.sanitizeAppName = void 0;
+exports.sanitizeServiceName = exports.getServiceName = exports.sanitizeAppName = void 0;
 const sanitizeAppName = function (appName) {
-    const newAppName = appName.replace(/@/g, "").replace(/./g, "-").replace(/>/g, "-") || "";
+    const newAppName = appName.replace(/@/g, "").replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, "-") || "";
     return newAppName;
 };
 exports.sanitizeAppName = sanitizeAppName;
@@ -23,4 +23,9 @@ const getServiceName = function (natsSubject) {
     return serviceActions;
 };
 exports.getServiceName = getServiceName;
+const sanitizeServiceName = function (serviceName) {
+    const newServiceName = serviceName.replace(/\//g, ".") || "";
+    return newServiceName;
+};
+exports.sanitizeServiceName = sanitizeServiceName;
 //# sourceMappingURL=helpers.js.map
