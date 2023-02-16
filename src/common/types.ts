@@ -5,8 +5,9 @@ import {
   ConnectionOptions,
   Status,
   Events,
+  MsgHdrs,
 } from "nats"
-import type { Id, NullableId, Params } from "@feathersjs/feathers"
+import type { NullableId, Params } from "@feathersjs/feathers"
 
 export type InitConfig = {
   appName: string
@@ -41,4 +42,10 @@ export type SendRequestScope = {
   serviceName: string
   methodName: ServiceMethods
   request: RequestParams
+}
+
+export type Reply = {
+  data?: Object | Array<any>
+  error?: Object
+  headers?: MsgHdrs
 }

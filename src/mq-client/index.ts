@@ -1,6 +1,6 @@
 "use strict"
 import Debug from "debug"
-// const debug = Debug("feathers-nats-distributed:client:index")
+const debug = Debug("feathers-nats-distributed:client:index")
 import { BadRequest } from "@feathersjs/errors"
 import { getInstance, NatsConnection, InitConfig } from "../instance"
 import { NatsService } from "./service"
@@ -21,6 +21,7 @@ const Client = function (config: InitConfig): (this: any) => void {
       app.defaultService = function (path: string) {
         return new NatsService(app, path, nats, config)
       }
+      debug("Finished configuring defaultService")
     }
 
     main()

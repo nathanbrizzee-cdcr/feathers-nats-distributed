@@ -9,7 +9,7 @@ import {
 } from "nats"
 import { NotFound, MethodNotAllowed, BadRequest } from "@feathersjs/errors"
 import { getServiceName } from "../common/helpers"
-import { ServiceMethods } from "../common/types"
+import { ServiceMethods, Reply } from "../common/types"
 import { jsonCodec } from "../instance"
 import Debug from "debug"
 const debug = Debug("feathers-nats-distributed:server:response-handler")
@@ -103,7 +103,7 @@ export default class natsResponse {
               break
           }
 
-          const reply = { data: result }
+          const reply: Reply = { data: result }
           // respond returns true if the message had a reply subject, thus it could respond
           if (m.respond(jsonCodec.encode(reply))) {
             debug(
@@ -132,7 +132,7 @@ export default class natsResponse {
             err = new BadRequest("Invalid JSON request received")
             debug(err)
           }
-          const errObj = { error: err }
+          const errObj: Reply = { error: err }
           if (m.respond(jsonCodec.encode(errObj))) {
             debug(
               `[${

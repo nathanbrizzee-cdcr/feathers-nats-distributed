@@ -1,5 +1,6 @@
 "use strict"
-const debug = require("debug")("feathers-mq:client:service")
+import Debug from "debug"
+const debug = Debug("feathers-mq:client:service")
 import { BadRequest, MethodNotAllowed, NotFound } from "@feathersjs/errors"
 import type { Id, NullableId, Params } from "@feathersjs/feathers"
 import { getInstance, NatsConnection } from "../instance"

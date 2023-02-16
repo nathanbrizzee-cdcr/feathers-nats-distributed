@@ -1,7 +1,10 @@
 "use strict"
-const debug = require("debug")("feathers-mq:client:service")
+import Debug from "debug"
+const debug = Debug("feathers-mq:client:send-request")
 import { BadRequest, MethodNotAllowed, NotFound } from "@feathersjs/errors"
 import type { Id, NullableId, Params } from "@feathersjs/feathers"
+import { RequestOptions, NatsError, ErrorCode } from "nats"
+import { Reply } from "../common/types"
 import { jsonCodec, getInstance, NatsConnection } from "../instance"
 import {
   InitConfig,
@@ -21,47 +24,45 @@ export default function sendRequest(
 
   return new Promise(async (resolve, reject) => {
     try {
+      const opts: RequestOptions = {
+        timeout: 20000,
+      }
       nats
-        .request(subject, jsonCodec.encode(request))
-        .then(response => {})
-        .catch(e => {})
-
-      nats.requestOne(
-        `${serviceName}.${methodName}`,
-        payload,
-        {},
-        configuration.timeout,
-        response => {
+        .request(subject, jsonCodec.encode(request), opts)
+        .then(response => {
           if (
-            response instanceof NATS.NatsError &&
-            response.code === NATS.REQ_TIMEOUT
+            response instanceof NatsError &&
+            response.code === ErrorCode.Timeout
           ) {
             return reject(
-              new Errors.Timeout("Request timed out on feathers-mq.", {
+              new BadRequest("Request timed out on feathers-mq.", {
                 appName,
                 serviceName,
                 methodName,
               })
             )
           }
-          debug("Got response %O", response)
+          const decodedData: any = jsonCodec.decode(response.data)
+          debug("Received reply %0", decodedData)
 
-          if (response) {
-            if (response.__mqError) {
-              //eslint-disable-line
-              return reject(response.__mqError) //eslint-disable-line
-            }
-
-            if (response.errors) {
-              return reject(response)
-            }
+          const reply: Reply = {
+            data: decodedData.data?.data,
+            headers: decodedData?.headers,
+            error: decodedData.data?.error,
+          }
+          if (reply.error) {
+            return reject(response)
           }
 
-          return resolve(response)
-        }
-      )
-    } catch (e) {
-      reject(e)
+          return resolve(reply)
+        })
+        .catch(e => {
+          debug("a nats error occurred ", e)
+          reject(e.message)
+        })
+    } catch (e: any) {
+      debug("an error occurred ", e)
+      reject(e.message)
     }
   })
 }

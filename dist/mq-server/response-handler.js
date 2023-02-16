@@ -19,51 +19,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const nats_1 = require("nats");
 const errors_1 = require("@feathersjs/errors");
+const helpers_1 = require("../common/helpers");
+const types_1 = require("../common/types");
+const instance_1 = require("../instance");
 const debug_1 = __importDefault(require("debug"));
 const debug = (0, debug_1.default)("feathers-nats-distributed:server:response-handler");
 class natsResponse {
     constructor(app, appName, nats) {
-        this.jsonCodec = (0, nats_1.JSONCodec)();
-        this.stringCodec = (0, nats_1.StringCodec)();
         this.app = app;
         this.appName = appName;
         this.nats = nats;
         this.Services = Object.keys(app.services);
     }
-    getServiceName(natsSubject) {
-        const subjectParts = natsSubject.split(".");
-        const serviceActions = {
-            serverName: "",
-            serviceName: "",
-            methodName: "",
-        };
-        serviceActions.serverName = subjectParts[0];
-        if (subjectParts.length > 1) {
-            serviceActions.methodName = subjectParts[1];
-        }
-        if (subjectParts.length > 2) {
-            serviceActions.serviceName = subjectParts.slice(2).join("/");
-        }
-        return serviceActions;
-    }
-    wrapError(error) {
-        const newError = {};
-        const __mqError = {};
-        Object.getOwnPropertyNames(error).forEach(key => {
-            newError[key] = error[key];
-            __mqError[key] = error[key];
-        });
-        newError.__mqError = __mqError;
-        return newError;
-    }
-    createService(serviceType) {
+    createService(serviceMethod) {
         return __awaiter(this, void 0, void 0, function* () {
             const queueOpts = {
-                queue: `${this.appName}.${serviceType}.>`,
+                queue: `service.${this.appName}.${serviceMethod}.>`,
             };
-            debug("Creating subscription queue on ", queueOpts);
+            debug("Creating service subscription queue on ", queueOpts.queue);
             const sub = this.nats.subscribe(queueOpts.queue, queueOpts);
             (() => __awaiter(this, void 0, void 0, function* () {
                 var _a, e_1, _b, _c;
@@ -74,7 +48,7 @@ class natsResponse {
                         try {
                             const m = _c;
                             try {
-                                const svcInfo = this.getServiceName(m.subject);
+                                const svcInfo = (0, helpers_1.getServiceName)(m.subject);
                                 if (!this.Services.includes(svcInfo.serviceName)) {
                                     throw new errors_1.NotFound(`Service \`${svcInfo.serviceName}\` is not registered in this server.`);
                                 }
@@ -83,35 +57,35 @@ class natsResponse {
                                     throw new errors_1.MethodNotAllowed(`Method \`${svcInfo.methodName}\` is not supported by this endpoint.`);
                                 }
                                 let result;
-                                const request = this.jsonCodec.decode(m.data);
+                                const request = instance_1.jsonCodec.decode(m.data);
                                 debug(JSON.stringify({ svcInfo, request }, null, 2));
-                                switch (serviceType) {
-                                    case "find":
+                                switch (serviceMethod) {
+                                    case types_1.ServiceMethods.Find:
                                         result = yield this.app
                                             .service(svcInfo.serviceName)
                                             .find(request.params);
                                         break;
-                                    case "get":
+                                    case types_1.ServiceMethods.Get:
                                         result = yield this.app
                                             .service(svcInfo.serviceName)
                                             .get(request.id, request.params);
                                         break;
-                                    case "create":
+                                    case types_1.ServiceMethods.Create:
                                         result = yield this.app
                                             .service(svcInfo.serviceName)
                                             .create(request.data, request.params);
                                         break;
-                                    case "patch":
+                                    case types_1.ServiceMethods.Patch:
                                         result = yield this.app
                                             .service(svcInfo.serviceName)
                                             .patch(request.id, request.data, request.params);
                                         break;
-                                    case "update":
+                                    case types_1.ServiceMethods.Update:
                                         result = yield this.app
                                             .service(svcInfo.serviceName)
                                             .update(request.id, request.data, request.params);
                                         break;
-                                    case "remove":
+                                    case types_1.ServiceMethods.Remove:
                                         result = yield this.app
                                             .service(svcInfo.serviceName)
                                             .remove(request.id, request.params);
@@ -121,7 +95,7 @@ class natsResponse {
                                         break;
                                 }
                                 const reply = { data: result };
-                                if (m.respond(this.jsonCodec.encode(reply))) {
+                                if (m.respond(instance_1.jsonCodec.encode(reply))) {
                                     debug(`[${this.appName}] reply #${sub.getProcessed()} => ${JSON.stringify(reply)}`);
                                 }
                                 else {
@@ -139,7 +113,7 @@ class natsResponse {
                                     debug(err);
                                 }
                                 const errObj = { error: err };
-                                if (m.respond(this.jsonCodec.encode(errObj))) {
+                                if (m.respond(instance_1.jsonCodec.encode(errObj))) {
                                     debug(`[${this.appName}] reply #${sub.getProcessed()} => ${JSON.stringify(errObj)}`);
                                 }
                                 else {
