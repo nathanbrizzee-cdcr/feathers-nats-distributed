@@ -35,7 +35,12 @@ class natsResponse {
     createService(serviceMethod) {
         return __awaiter(this, void 0, void 0, function* () {
             const queueOpts = {
-                queue: `service.${this.appName}.${serviceMethod}.>`,
+                queue: (0, helpers_1.makeNatsQueueOption)({
+                    serviceType: types_1.ServiceTypes.Service,
+                    serverName: this.appName,
+                    methodName: serviceMethod,
+                    servicePath: "",
+                }),
             };
             debug("Creating service subscription queue on ", queueOpts.queue);
             const sub = this.nats.subscribe(queueOpts.queue, queueOpts);
@@ -49,10 +54,10 @@ class natsResponse {
                             const m = _c;
                             try {
                                 const svcInfo = (0, helpers_1.getServiceName)(m.subject);
-                                if (!this.Services.includes(svcInfo.serviceName)) {
-                                    throw new errors_1.NotFound(`Service \`${svcInfo.serviceName}\` is not registered in this server.`);
+                                if (!this.Services.includes(svcInfo.servicePath)) {
+                                    throw new errors_1.NotFound(`Service \`${svcInfo.servicePath}\` is not registered in this server.`);
                                 }
-                                const availableMethods = Object.keys(this.app.services[svcInfo.serviceName]);
+                                const availableMethods = Object.keys(this.app.services[svcInfo.servicePath]);
                                 if (!availableMethods.includes(svcInfo.methodName)) {
                                     throw new errors_1.MethodNotAllowed(`Method \`${svcInfo.methodName}\` is not supported by this endpoint.`);
                                 }
@@ -62,32 +67,32 @@ class natsResponse {
                                 switch (serviceMethod) {
                                     case types_1.ServiceMethods.Find:
                                         result = yield this.app
-                                            .service(svcInfo.serviceName)
+                                            .service(svcInfo.servicePath)
                                             .find(request.params);
                                         break;
                                     case types_1.ServiceMethods.Get:
                                         result = yield this.app
-                                            .service(svcInfo.serviceName)
+                                            .service(svcInfo.servicePath)
                                             .get(request.id, request.params);
                                         break;
                                     case types_1.ServiceMethods.Create:
                                         result = yield this.app
-                                            .service(svcInfo.serviceName)
+                                            .service(svcInfo.servicePath)
                                             .create(request.data, request.params);
                                         break;
                                     case types_1.ServiceMethods.Patch:
                                         result = yield this.app
-                                            .service(svcInfo.serviceName)
+                                            .service(svcInfo.servicePath)
                                             .patch(request.id, request.data, request.params);
                                         break;
                                     case types_1.ServiceMethods.Update:
                                         result = yield this.app
-                                            .service(svcInfo.serviceName)
+                                            .service(svcInfo.servicePath)
                                             .update(request.id, request.data, request.params);
                                         break;
                                     case types_1.ServiceMethods.Remove:
                                         result = yield this.app
-                                            .service(svcInfo.serviceName)
+                                            .service(svcInfo.servicePath)
                                             .remove(request.id, request.params);
                                         break;
                                     default:

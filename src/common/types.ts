@@ -8,6 +8,7 @@ import {
   MsgHdrs,
 } from "nats"
 import type { NullableId, Params } from "@feathersjs/feathers"
+import { FeathersError } from "@feathersjs/errors"
 
 export type InitConfig = {
   appName: string
@@ -16,8 +17,9 @@ export type InitConfig = {
 
 export type ServiceActions = {
   serverName: string
-  serviceName: string
-  methodName: string
+  servicePath: string
+  methodName: ServiceMethods
+  serviceType: ServiceTypes
 }
 
 export enum ServiceMethods {
@@ -27,6 +29,13 @@ export enum ServiceMethods {
   Update = "update",
   Patch = "patch",
   Remove = "remove",
+  Unknown = "",
+}
+
+export enum ServiceTypes {
+  Unknown = "",
+  Service = "service",
+  Event = "event",
 }
 
 export type RequestParams = {
@@ -46,6 +55,6 @@ export type SendRequestScope = {
 
 export type Reply = {
   data?: Object | Array<any>
-  error?: Object
+  error?: FeathersError
   headers?: MsgHdrs
 }

@@ -1,5 +1,5 @@
 "use strict"
-import { ServiceActions } from "./types"
+import { ServiceActions, ServiceTypes, ServiceMethods } from "./types"
 
 /**
  * Replaces NATS special characters with safe characters
@@ -10,7 +10,7 @@ const sanitizeAppName = function (appName: string): string {
   // Takes a name like "@mycompany/server.name" and return "mycompany/server-name"
   //const newAppName = appName.split("/").pop()?.replace("@", "") || ""
   const newAppName =
-    appName.replace(/@/g, "").replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, "-") || "" // Replace NATS special characters
+    appName.replace(/@/g, "").replace(/[&\/\\#,+()$%.'":*?<>{}]/g, "-") || "" // Replace NATS special characters
   return newAppName
 }
 
@@ -20,26 +20,52 @@ const sanitizeAppName = function (appName: string): string {
  * @returns Service name and endpoint
  */
 const getServiceName = function (natsSubject: string): ServiceActions {
-  // natsSubject should look like this "ServerName.get.users"
+  // natsSubject should look like this "service.ServerName.get.users"
+  // or  "service.ServerName.create.api.pvdts.someintermediate.users"
+  // or  "event.ServerName.update.api.users"
   const subjectParts: string[] = natsSubject.split(".")
   const serviceActions: ServiceActions = {
     serverName: "",
-    serviceName: "",
-    methodName: "",
+    servicePath: "",
+    methodName: ServiceMethods.Unknown,
+    serviceType: ServiceTypes.Unknown,
   }
-  serviceActions.serverName = subjectParts[0]
+  serviceActions.serviceType = subjectParts[0] as ServiceTypes
   if (subjectParts.length > 1) {
-    serviceActions.methodName = subjectParts[1]
+    serviceActions.serverName = subjectParts[1] as string
   }
   if (subjectParts.length > 2) {
-    serviceActions.serviceName = subjectParts.slice(2).join("/")
+    serviceActions.methodName = subjectParts[2] as ServiceMethods
+  }
+  if (subjectParts.length > 3) {
+    serviceActions.servicePath = subjectParts.slice(3).join("/")
   }
   return serviceActions
 }
+const makeNatsSubjectName = function (serviceActions: ServiceActions) {
+  let newServicename = serviceActions.servicePath
 
+  if (serviceActions.servicePath.startsWith("/")) {
+    newServicename = serviceActions.servicePath.replace("/", "")
+  }
+  newServicename = sanitizeServiceName(newServicename)
+
+  const subject = `${serviceActions.serviceType}.${serviceActions.serverName}.${serviceActions.methodName}.${newServicename}`
+  return subject
+}
+const makeNatsQueueOption = function (serviceActions: ServiceActions): string {
+  const queue: string = `${serviceActions.serviceType}.${serviceActions.serverName}.${serviceActions.methodName}.>`
+  return queue
+}
 const sanitizeServiceName = function (serviceName: string): string {
   const newServiceName: string = serviceName.replace(/\//g, ".") || "" // Convert to NATS segments
   return newServiceName
 }
 
-export { sanitizeAppName, getServiceName, sanitizeServiceName }
+export {
+  sanitizeAppName,
+  getServiceName,
+  sanitizeServiceName,
+  makeNatsSubjectName,
+  makeNatsQueueOption,
+}

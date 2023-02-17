@@ -8,8 +8,13 @@ import {
   SubscriptionOptions,
 } from "nats"
 import { NotFound, MethodNotAllowed, BadRequest } from "@feathersjs/errors"
-import { getServiceName } from "../common/helpers"
-import { ServiceMethods, Reply } from "../common/types"
+import { getServiceName, makeNatsQueueOption } from "../common/helpers"
+import {
+  ServiceMethods,
+  Reply,
+  ServiceActions,
+  ServiceTypes,
+} from "../common/types"
 import { jsonCodec } from "../instance"
 import Debug from "debug"
 const debug = Debug("feathers-nats-distributed:server:response-handler")
@@ -26,16 +31,16 @@ export default class natsResponse {
     this.Services = Object.keys(app.services)
   }
 
-  /**
-   *
-   * @param serviceMethod One of
-   * @returns
-   */
   public async createService(
     serviceMethod: ServiceMethods
   ): Promise<Subscription> {
     const queueOpts: SubscriptionOptions = {
-      queue: `service.${this.appName}.${serviceMethod}.>`,
+      queue: makeNatsQueueOption({
+        serviceType: ServiceTypes.Service,
+        serverName: this.appName,
+        methodName: serviceMethod,
+        servicePath: "",
+      }),
     }
     debug("Creating service subscription queue on ", queueOpts.queue)
     // create a subscription - note the option for a queue, if set
@@ -44,17 +49,17 @@ export default class natsResponse {
     ;(async () => {
       for await (const m of sub) {
         try {
-          const svcInfo = getServiceName(m.subject)
+          const svcInfo: ServiceActions = getServiceName(m.subject)
 
           // check if service is registered
-          if (!this.Services.includes(svcInfo.serviceName)) {
+          if (!this.Services.includes(svcInfo.servicePath)) {
             throw new NotFound(
-              `Service \`${svcInfo.serviceName}\` is not registered in this server.`
+              `Service \`${svcInfo.servicePath}\` is not registered in this server.`
             )
           }
 
           const availableMethods = Object.keys(
-            this.app.services[svcInfo.serviceName]
+            this.app.services[svcInfo.servicePath]
           )
           // check if the 'service method' is registered
           if (!availableMethods.includes(svcInfo.methodName)) {
@@ -69,33 +74,33 @@ export default class natsResponse {
           switch (serviceMethod) {
             case ServiceMethods.Find:
               result = await this.app
-                .service(svcInfo.serviceName)
+                .service(svcInfo.servicePath)
                 .find(request.params)
               break
 
             case ServiceMethods.Get:
               result = await this.app
-                .service(svcInfo.serviceName)
+                .service(svcInfo.servicePath)
                 .get(request.id, request.params)
               break
             case ServiceMethods.Create:
               result = await this.app
-                .service(svcInfo.serviceName)
+                .service(svcInfo.servicePath)
                 .create(request.data, request.params)
               break
             case ServiceMethods.Patch:
               result = await this.app
-                .service(svcInfo.serviceName)
+                .service(svcInfo.servicePath)
                 .patch(request.id, request.data, request.params)
               break
             case ServiceMethods.Update:
               result = await this.app
-                .service(svcInfo.serviceName)
+                .service(svcInfo.servicePath)
                 .update(request.id, request.data, request.params)
               break
             case ServiceMethods.Remove:
               result = await this.app
-                .service(svcInfo.serviceName)
+                .service(svcInfo.servicePath)
                 .remove(request.id, request.params)
               break
             default:

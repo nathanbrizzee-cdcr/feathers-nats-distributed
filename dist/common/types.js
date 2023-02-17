@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ServiceMethods = void 0;
+exports.ServiceTypes = exports.ServiceMethods = void 0;
 var ServiceMethods;
 (function (ServiceMethods) {
     ServiceMethods["Find"] = "find";
@@ -9,5 +9,12 @@ var ServiceMethods;
     ServiceMethods["Update"] = "update";
     ServiceMethods["Patch"] = "patch";
     ServiceMethods["Remove"] = "remove";
+    ServiceMethods["Unknown"] = "";
 })(ServiceMethods = exports.ServiceMethods || (exports.ServiceMethods = {}));
+var ServiceTypes;
+(function (ServiceTypes) {
+    ServiceTypes["Unknown"] = "";
+    ServiceTypes["Service"] = "service";
+    ServiceTypes["Event"] = "event";
+})(ServiceTypes = exports.ServiceTypes || (exports.ServiceTypes = {}));
 //# sourceMappingURL=types.js.map

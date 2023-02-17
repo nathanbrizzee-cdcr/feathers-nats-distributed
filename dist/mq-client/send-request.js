@@ -19,39 +19,36 @@ const errors_1 = require("@feathersjs/errors");
 const nats_1 = require("nats");
 const helpers_1 = require("../common/helpers");
 const instance_1 = require("../instance");
+const types_1 = require("../common/types");
 function sendRequest(sendRequestScope) {
-    var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
-        const { appName, nats, serviceName, methodName, request } = sendRequestScope;
-        let newServicename = serviceName;
-        if (serviceName.startsWith("/")) {
-            newServicename = serviceName.replace("/", "");
-        }
-        newServicename = (0, helpers_1.sanitizeServiceName)(newServicename);
-        const subject = `service.${appName}.${newServicename}.${methodName}`;
-        debug(`triggered ${subject}`);
+        const { nats, request } = sendRequestScope;
+        const serviceActions = {
+            servicePath: sendRequestScope.serviceName,
+            serverName: sendRequestScope.appName,
+            methodName: sendRequestScope.methodName,
+            serviceType: types_1.ServiceTypes.Service,
+        };
+        const subject = (0, helpers_1.makeNatsSubjectName)(serviceActions);
+        debug(`Sending Request to NATS queue ${subject}`);
         const opts = {
             timeout: 20000,
         };
         try {
             const response = yield nats.request(subject, instance_1.jsonCodec.encode(request), opts);
             if (response instanceof nats_1.NatsError && response.code === nats_1.ErrorCode.Timeout) {
-                throw new errors_1.BadRequest("Request timed out on feathers-mq.", {
-                    appName,
-                    newServicename,
-                    methodName,
-                });
+                throw new errors_1.BadRequest("Request timed out on feathers-mq.", serviceActions);
             }
             const decodedData = instance_1.jsonCodec.decode(response.data);
             debug("Received reply %0", decodedData);
             const reply = {
-                data: (_a = decodedData.data) === null || _a === void 0 ? void 0 : _a.data,
-                headers: decodedData === null || decodedData === void 0 ? void 0 : decodedData.headers,
-                error: (_b = decodedData.data) === null || _b === void 0 ? void 0 : _b.error,
+                data: decodedData.data,
+                headers: decodedData.headers,
+                error: decodedData.error,
             };
             if (reply.error) {
                 debug(reply.error);
-                throw new errors_1.BadRequest(reply.error);
+                throw new errors_1.FeathersError(reply.error.message, reply.error.name, reply.error.code, reply.error.className, {});
             }
             return reply;
         }
@@ -59,12 +56,10 @@ function sendRequest(sendRequestScope) {
             switch (err.code) {
                 case nats_1.ErrorCode.NoResponders:
                     throw new errors_1.Unavailable(`no one is listening to ${subject}`);
-                    break;
                 case nats_1.ErrorCode.Timeout:
                     throw new errors_1.Timeout("someone is listening but didn't respond");
-                    break;
                 default:
-                    throw new errors_1.BadRequest("request failed", err);
+                    throw err;
             }
         }
     });

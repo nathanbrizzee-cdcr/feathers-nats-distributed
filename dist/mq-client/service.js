@@ -18,97 +18,103 @@ const debug = (0, debug_1.default)("feathers-nats-distributed:client:service");
 const types_1 = require("../common/types");
 const { sendRequest } = require("./send-request");
 class NatsService {
-    constructor(app, serviceName, nats, config) {
+    constructor(app, nats, config) {
         this.app = app;
-        this.serviceName = serviceName;
         this.nats = nats;
         this.config = config;
     }
-    find(_params) {
+    find(appName, serviceName, _params) {
         return __awaiter(this, void 0, void 0, function* () {
             const sendRequestScope = {
-                appName: this.config.appName,
+                appName: appName,
                 nats: this.nats,
                 app: this.app,
-                serviceName: this.serviceName,
+                serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Find,
-                request: { params: _params },
+                request: {
+                    params: Object.assign({}, {
+                        headers: _params === null || _params === void 0 ? void 0 : _params.headers,
+                        provider: _params === null || _params === void 0 ? void 0 : _params.provider,
+                        query: _params === null || _params === void 0 ? void 0 : _params.query,
+                        route: _params === null || _params === void 0 ? void 0 : _params.route,
+                    }),
+                },
             };
-            const retval = yield sendRequest(sendRequestScope);
-            return retval.data;
+            const reply = yield sendRequest(sendRequestScope);
+            return reply.data;
         });
     }
-    get(id, _params) {
+    get(serviceName, id, _params) {
         return __awaiter(this, void 0, void 0, function* () {
             const sendRequestScope = {
                 appName: this.config.appName,
                 nats: this.nats,
                 app: this.app,
-                serviceName: this.serviceName,
+                serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Get,
                 request: { id: id, params: _params },
             };
-            const retval = yield sendRequest(sendRequestScope);
-            return retval.data;
+            const reply = yield sendRequest(sendRequestScope);
+            return reply.data;
         });
     }
-    create(data, params) {
+    create(serviceName, data, params) {
         return __awaiter(this, void 0, void 0, function* () {
             if (Array.isArray(data)) {
-                return Promise.all(data.map(current => this.create(current, params)));
+                return Promise.all(data.map(current => this.create(serviceName, current, params)));
             }
             const sendRequestScope = {
                 appName: this.config.appName,
                 nats: this.nats,
                 app: this.app,
-                serviceName: this.serviceName,
+                serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Create,
                 request: { data: data, params: params },
             };
-            const retval = yield sendRequest(sendRequestScope);
-            return retval.data;
+            const reply = yield sendRequest(sendRequestScope);
+            return reply.data;
         });
     }
-    update(id, data, _params) {
+    update(serviceName, id, data, _params) {
         return __awaiter(this, void 0, void 0, function* () {
             const sendRequestScope = {
                 appName: this.config.appName,
                 nats: this.nats,
                 app: this.app,
-                serviceName: this.serviceName,
+                serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Update,
                 request: { id: id, data: data, params: _params },
             };
-            const retval = yield sendRequest(sendRequestScope);
-            return retval.data;
+            const reply = yield sendRequest(sendRequestScope);
+            return reply.data;
         });
     }
-    patch(id, data, _params) {
+    patch(serviceName, id, data, _params) {
         return __awaiter(this, void 0, void 0, function* () {
             const sendRequestScope = {
                 appName: this.config.appName,
                 nats: this.nats,
                 app: this.app,
-                serviceName: this.serviceName,
+                serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Patch,
                 request: { id: id, data: data, params: _params },
             };
-            const retval = yield sendRequest(sendRequestScope);
-            return retval.data;
+            const reply = yield sendRequest(sendRequestScope);
+            return reply.data;
         });
     }
-    remove(id, _params) {
+    remove(serviceName, id, _params) {
         return __awaiter(this, void 0, void 0, function* () {
             const sendRequestScope = {
                 appName: this.config.appName,
                 nats: this.nats,
                 app: this.app,
-                serviceName: this.serviceName,
+                serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Remove,
                 request: { id: id, params: _params },
             };
-            const retval = yield sendRequest(sendRequestScope);
-            return retval.data;
+            const reply = yield sendRequest(sendRequestScope);
+            return reply.data;
         });
     }
 }

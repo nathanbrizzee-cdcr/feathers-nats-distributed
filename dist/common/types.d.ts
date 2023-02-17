@@ -1,13 +1,15 @@
 import { NatsConnection, ConnectionOptions, MsgHdrs } from "nats";
 import type { NullableId, Params } from "@feathersjs/feathers";
+import { FeathersError } from "@feathersjs/errors";
 export type InitConfig = {
     appName: string;
     natsConfig: ConnectionOptions;
 };
 export type ServiceActions = {
     serverName: string;
-    serviceName: string;
-    methodName: string;
+    servicePath: string;
+    methodName: ServiceMethods;
+    serviceType: ServiceTypes;
 };
 export declare enum ServiceMethods {
     Find = "find",
@@ -15,7 +17,13 @@ export declare enum ServiceMethods {
     Create = "create",
     Update = "update",
     Patch = "patch",
-    Remove = "remove"
+    Remove = "remove",
+    Unknown = ""
+}
+export declare enum ServiceTypes {
+    Unknown = "",
+    Service = "service",
+    Event = "event"
 }
 export type RequestParams = {
     id?: NullableId;
@@ -32,6 +40,6 @@ export type SendRequestScope = {
 };
 export type Reply = {
     data?: Object | Array<any>;
-    error?: Object;
+    error?: FeathersError;
     headers?: MsgHdrs;
 };

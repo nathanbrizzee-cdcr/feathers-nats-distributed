@@ -29,7 +29,9 @@ const Server = function (config) {
                 }
                 config.appName = (0, helpers_1.sanitizeAppName)(config.appName);
                 nats = yield (0, instance_1.getInstance)(config.natsConfig);
-                app.set("natsInstance", nats);
+                if (!app.get("natsInstance")) {
+                    app.set("natsInstance", nats);
+                }
                 try {
                     const conns = [];
                     const resp = new response_handler_1.default(app, config.appName, nats);

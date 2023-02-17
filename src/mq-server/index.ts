@@ -20,7 +20,9 @@ const Server = function (config: InitConfig): (this: any) => void {
       // Clean up the appname for NATS
       config.appName = sanitizeAppName(config.appName)
       nats = await getInstance(config.natsConfig)
-      app.set("natsInstance", nats)
+      if (!app.get("natsInstance")) {
+        app.set("natsInstance", nats)
+      }
 
       try {
         const conns = []

@@ -1,4 +1,5 @@
-import { FeathersKoaContext } from "@feathersjs/koa";
 import { InitConfig } from "../instance";
-declare const Client: (config: InitConfig) => (ctx: FeathersKoaContext, next: () => Promise<any>) => Promise<void>;
+import { NatsService } from "./service";
+export { NatsService };
+declare const Client: (config: InitConfig) => (this: any) => void;
 export { Client };

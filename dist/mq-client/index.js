@@ -12,38 +12,42 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Client = void 0;
+exports.Client = exports.NatsService = void 0;
 const debug_1 = __importDefault(require("debug"));
 const debug = (0, debug_1.default)("feathers-nats-distributed:client:index");
 const errors_1 = require("@feathersjs/errors");
 const instance_1 = require("../instance");
 const helpers_1 = require("../common/helpers");
 const service_1 = require("./service");
+Object.defineProperty(exports, "NatsService", { enumerable: true, get: function () { return service_1.NatsService; } });
 let nats;
 const Client = function (config) {
-    return (ctx, next) => __awaiter(this, void 0, void 0, function* () {
-        const app = ctx.app;
-        try {
-            if (!config.appName) {
-                throw new errors_1.BadRequest("appName (the name of this client) is required ");
-            }
-            config.appName = (0, helpers_1.sanitizeAppName)(config.appName);
-            nats = yield (0, instance_1.getInstance)(config.natsConfig);
-            app.set("natsInstance", nats);
-            const svc = new service_1.NatsService(app, ctx.path, nats, config);
-            ctx.body = yield svc.find(ctx.query);
-            yield next();
+    return function mqclient() {
+        const app = this;
+        function main() {
+            return __awaiter(this, void 0, void 0, function* () {
+                if (!config.appName) {
+                    throw new errors_1.BadRequest("appName (the name of this server) is required ");
+                }
+                config.appName = (0, helpers_1.sanitizeAppName)(config.appName);
+                nats = yield (0, instance_1.getInstance)(config.natsConfig);
+                if (!app.get("natsInstance")) {
+                    app.set("natsInstance", nats);
+                }
+                try {
+                    const svc = new service_1.NatsService(app, nats, config);
+                    if (!app.get("NatsService")) {
+                        app.set("NatsService", svc);
+                    }
+                }
+                catch (e) {
+                    throw new errors_1.BadRequest("An error occurred creating NATS Service", e);
+                }
+            });
         }
-        catch (error) {
-            ctx.response.status = error instanceof errors_1.FeathersError ? error.code : 500;
-            ctx.body =
-                typeof error.toJSON === "function"
-                    ? error.toJSON()
-                    : {
-                        message: error.message,
-                    };
-        }
-    });
+        main();
+        return this;
+    };
 };
 exports.Client = Client;
 //# sourceMappingURL=index.js.map
