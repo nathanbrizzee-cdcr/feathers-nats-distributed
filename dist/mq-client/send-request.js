@@ -30,7 +30,6 @@ function sendRequest(sendRequestScope) {
             serviceType: types_1.ServiceTypes.Service,
         };
         const subject = (0, helpers_1.makeNatsSubjectName)(serviceActions);
-        debug(`Sending Request to NATS queue ${subject}`);
         const opts = {
             timeout: 20000,
         };

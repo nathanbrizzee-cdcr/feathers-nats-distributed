@@ -34,12 +34,14 @@ const makeNatsSubjectName = function (serviceActions) {
         newServicename = serviceActions.servicePath.replace("/", "");
     }
     newServicename = sanitizeServiceName(newServicename);
-    const subject = `${serviceActions.serviceType}.${serviceActions.serverName}.${serviceActions.methodName}.${newServicename}`;
+    let newServerName = sanitizeAppName(serviceActions.serverName);
+    const subject = `${serviceActions.serviceType}.${newServerName}.${serviceActions.methodName}.${newServicename}`;
     return subject;
 };
 exports.makeNatsSubjectName = makeNatsSubjectName;
 const makeNatsQueueOption = function (serviceActions) {
-    const queue = `${serviceActions.serviceType}.${serviceActions.serverName}.${serviceActions.methodName}.>`;
+    let newServerName = sanitizeAppName(serviceActions.serverName);
+    const queue = `${serviceActions.serviceType}.${newServerName}.${serviceActions.methodName}.>`;
     return queue;
 };
 exports.makeNatsQueueOption = makeNatsQueueOption;

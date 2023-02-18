@@ -49,12 +49,13 @@ const makeNatsSubjectName = function (serviceActions: ServiceActions) {
     newServicename = serviceActions.servicePath.replace("/", "")
   }
   newServicename = sanitizeServiceName(newServicename)
-
-  const subject = `${serviceActions.serviceType}.${serviceActions.serverName}.${serviceActions.methodName}.${newServicename}`
+  let newServerName = sanitizeAppName(serviceActions.serverName)
+  const subject = `${serviceActions.serviceType}.${newServerName}.${serviceActions.methodName}.${newServicename}`
   return subject
 }
 const makeNatsQueueOption = function (serviceActions: ServiceActions): string {
-  const queue: string = `${serviceActions.serviceType}.${serviceActions.serverName}.${serviceActions.methodName}.>`
+  let newServerName = sanitizeAppName(serviceActions.serverName)
+  const queue: string = `${serviceActions.serviceType}.${newServerName}.${serviceActions.methodName}.>`
   return queue
 }
 const sanitizeServiceName = function (serviceName: string): string {

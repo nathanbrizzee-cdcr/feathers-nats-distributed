@@ -35,7 +35,7 @@ export async function sendRequest(
     serviceType: ServiceTypes.Service,
   }
   const subject = makeNatsSubjectName(serviceActions)
-  debug(`Sending Request to NATS queue ${subject}`)
+  // debug(`Sending Request to NATS queue ${subject}`)
 
   const opts: RequestOptions = {
     timeout: 20000,

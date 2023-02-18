@@ -29,8 +29,8 @@ const Server = function (config) {
                 }
                 config.appName = (0, helpers_1.sanitizeAppName)(config.appName);
                 nats = yield (0, instance_1.getInstance)(config.natsConfig);
-                if (!app.get("natsInstance")) {
-                    app.set("natsInstance", nats);
+                if (!app.get("NatsInstance")) {
+                    app.set("NatsInstance", nats);
                 }
                 try {
                     const conns = [];
