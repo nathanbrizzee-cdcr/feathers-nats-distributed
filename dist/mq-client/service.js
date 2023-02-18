@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getOptions = exports.NatsService = void 0;
+exports.NatsService = void 0;
 const debug_1 = __importDefault(require("debug"));
 const debug = (0, debug_1.default)("feathers-nats-distributed:client:service");
 const types_1 = require("../common/types");
@@ -23,95 +23,137 @@ class NatsService {
         this.nats = nats;
         this.config = config;
     }
-    find(appName, serviceName, _params) {
+    find(serverName, serviceName, _params) {
         return __awaiter(this, void 0, void 0, function* () {
             const sendRequestScope = {
-                appName: appName,
+                appName: serverName,
                 nats: this.nats,
                 app: this.app,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Find,
                 request: {
-                    params: Object.assign({}, {
-                        headers: _params === null || _params === void 0 ? void 0 : _params.headers,
-                        provider: _params === null || _params === void 0 ? void 0 : _params.provider,
+                    params: {
                         query: _params === null || _params === void 0 ? void 0 : _params.query,
+                        provider: _params === null || _params === void 0 ? void 0 : _params.provider,
                         route: _params === null || _params === void 0 ? void 0 : _params.route,
-                    }),
+                        headers: _params === null || _params === void 0 ? void 0 : _params.headers,
+                    },
                 },
             };
             const reply = yield sendRequest(sendRequestScope);
             return reply.data;
         });
     }
-    get(serviceName, id, _params) {
+    get(serverName, serviceName, id, _params) {
         return __awaiter(this, void 0, void 0, function* () {
             const sendRequestScope = {
-                appName: this.config.appName,
+                appName: serverName,
                 nats: this.nats,
                 app: this.app,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Get,
-                request: { id: id, params: _params },
+                request: {
+                    id: id,
+                    params: {
+                        query: _params === null || _params === void 0 ? void 0 : _params.query,
+                        provider: _params === null || _params === void 0 ? void 0 : _params.provider,
+                        route: _params === null || _params === void 0 ? void 0 : _params.route,
+                        headers: _params === null || _params === void 0 ? void 0 : _params.headers,
+                    },
+                },
             };
             const reply = yield sendRequest(sendRequestScope);
             return reply.data;
         });
     }
-    create(serviceName, data, params) {
+    create(serverName, serviceName, data, params) {
         return __awaiter(this, void 0, void 0, function* () {
             if (Array.isArray(data)) {
-                return Promise.all(data.map(current => this.create(serviceName, current, params)));
+                return Promise.all(data.map(current => this.create(serverName, serviceName, current, params)));
             }
             const sendRequestScope = {
-                appName: this.config.appName,
+                appName: serverName,
                 nats: this.nats,
                 app: this.app,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Create,
-                request: { data: data, params: params },
+                request: {
+                    data: data,
+                    params: {
+                        query: params === null || params === void 0 ? void 0 : params.query,
+                        provider: params === null || params === void 0 ? void 0 : params.provider,
+                        route: params === null || params === void 0 ? void 0 : params.route,
+                        headers: params === null || params === void 0 ? void 0 : params.headers,
+                    },
+                },
             };
             const reply = yield sendRequest(sendRequestScope);
             return reply.data;
         });
     }
-    update(serviceName, id, data, _params) {
+    update(serverName, serviceName, id, data, _params) {
         return __awaiter(this, void 0, void 0, function* () {
             const sendRequestScope = {
-                appName: this.config.appName,
+                appName: serverName,
                 nats: this.nats,
                 app: this.app,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Update,
-                request: { id: id, data: data, params: _params },
+                request: {
+                    id: id,
+                    data: data,
+                    params: {
+                        query: _params === null || _params === void 0 ? void 0 : _params.query,
+                        provider: _params === null || _params === void 0 ? void 0 : _params.provider,
+                        route: _params === null || _params === void 0 ? void 0 : _params.route,
+                        headers: _params === null || _params === void 0 ? void 0 : _params.headers,
+                    },
+                },
             };
             const reply = yield sendRequest(sendRequestScope);
             return reply.data;
         });
     }
-    patch(serviceName, id, data, _params) {
+    patch(serverName, serviceName, id, data, _params) {
         return __awaiter(this, void 0, void 0, function* () {
             const sendRequestScope = {
-                appName: this.config.appName,
+                appName: serverName,
                 nats: this.nats,
                 app: this.app,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Patch,
-                request: { id: id, data: data, params: _params },
+                request: {
+                    id: id,
+                    data: data,
+                    params: {
+                        query: _params === null || _params === void 0 ? void 0 : _params.query,
+                        provider: _params === null || _params === void 0 ? void 0 : _params.provider,
+                        route: _params === null || _params === void 0 ? void 0 : _params.route,
+                        headers: _params === null || _params === void 0 ? void 0 : _params.headers,
+                    },
+                },
             };
             const reply = yield sendRequest(sendRequestScope);
             return reply.data;
         });
     }
-    remove(serviceName, id, _params) {
+    remove(serverName, serviceName, id, _params) {
         return __awaiter(this, void 0, void 0, function* () {
             const sendRequestScope = {
-                appName: this.config.appName,
+                appName: serverName,
                 nats: this.nats,
                 app: this.app,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Remove,
-                request: { id: id, params: _params },
+                request: {
+                    id: id,
+                    params: {
+                        query: _params === null || _params === void 0 ? void 0 : _params.query,
+                        provider: _params === null || _params === void 0 ? void 0 : _params.provider,
+                        route: _params === null || _params === void 0 ? void 0 : _params.route,
+                        headers: _params === null || _params === void 0 ? void 0 : _params.headers,
+                    },
+                },
             };
             const reply = yield sendRequest(sendRequestScope);
             return reply.data;
@@ -119,8 +161,4 @@ class NatsService {
     }
 }
 exports.NatsService = NatsService;
-const getOptions = (app) => {
-    return { app };
-};
-exports.getOptions = getOptions;
 //# sourceMappingURL=service.js.map
