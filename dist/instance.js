@@ -65,7 +65,9 @@ const getInstance = function (natsConfig = {}) {
                             _d = false;
                             try {
                                 const s = _c;
-                                debug(`NATS instance status change ${JSON.stringify(s, null, 2)}`);
+                                if (s.type === nats_1.Events.Error) {
+                                    throw new lib_1.GeneralError("NATS server encountered an error", s);
+                                }
                             }
                             finally {
                                 _d = true;

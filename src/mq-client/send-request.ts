@@ -35,7 +35,7 @@ export async function sendRequest(
     serviceType: ServiceTypes.Service,
   }
   const subject = makeNatsSubjectName(serviceActions)
-  // debug(`Sending Request to NATS queue ${subject}`)
+  debug(`Sending Request to NATS queue ${subject}`)
 
   const opts: RequestOptions = {
     timeout: 20000,
@@ -50,7 +50,7 @@ export async function sendRequest(
       throw new BadRequest("Request timed out on feathers-mq.", serviceActions)
     }
     const decodedData: any = jsonCodec.decode(response.data)
-    debug("Received reply %0", decodedData)
+    // debug(`Received reply ${decodedData}`)
 
     const reply: Reply = {
       data: decodedData.data,

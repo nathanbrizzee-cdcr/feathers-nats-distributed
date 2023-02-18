@@ -8,6 +8,7 @@ import {
   Codec,
   JSONCodec,
   StringCodec,
+  Events,
 } from "nats"
 import { InitConfig, ServiceActions } from "./common/types"
 
@@ -62,14 +63,15 @@ const getInstance = async function (
       // Monitor the NATS instance for status changes
       ;(async () => {
         for await (const s of instance.status()) {
-          debug(`NATS instance status change ${JSON.stringify(s, null, 2)}`)
+          // debug(`NATS instance status change ${JSON.stringify(s, null, 2)}`)
           // Not positive we want to throw an error when the NATS server gets an error
           // Not sure if that means the server is no longer able to respond or if we can
           // keep talking to it.
           // If we die, then all servers could die at once causing a massive outage.
-          // if (s.type === Events.Error) {
-          //   throw new GeneralError("NATS server encountered an error", s)
-          // }
+          if (s.type === Events.Error) {
+            // debug(`NATS instance status change ${JSON.stringify(s, null, 2)}`)
+            throw new GeneralError("NATS server encountered an error", s)
+          }
         }
         debug("NATS status monitoring closed")
       })()
