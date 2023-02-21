@@ -4,6 +4,11 @@ import { FeathersError } from "@feathersjs/errors";
 export type InitConfig = {
     appName: string;
     natsConfig: ConnectionOptions;
+    servicePublisher?: {
+        publishServices: boolean;
+        servicesIgnoreList?: string[];
+        publishDelay: number;
+    };
 };
 export type ServiceActions = {
     serverName: string;
@@ -23,7 +28,8 @@ export declare enum ServiceMethods {
 export declare enum ServiceTypes {
     Unknown = "",
     Service = "service",
-    Event = "event"
+    Event = "event",
+    ServiceList = "servicelist"
 }
 export type RequestParams = {
     id?: NullableId;

@@ -25,15 +25,16 @@ const Server = function (config: InitConfig): (this: any) => void {
       }
 
       try {
-        const conns = []
-        const resp = new responses(app, config.appName, nats)
-        conns.push(resp.createService(ServiceMethods.Find))
-        conns.push(resp.createService(ServiceMethods.Get))
-        conns.push(resp.createService(ServiceMethods.Create))
-        conns.push(resp.createService(ServiceMethods.Patch))
-        conns.push(resp.createService(ServiceMethods.Update))
-        conns.push(resp.createService(ServiceMethods.Remove))
-        Promise.all(conns)
+        const svcs = []
+        const resp = new responses(app, config, nats)
+        svcs.push(resp.createService(ServiceMethods.Find))
+        svcs.push(resp.createService(ServiceMethods.Get))
+        svcs.push(resp.createService(ServiceMethods.Create))
+        svcs.push(resp.createService(ServiceMethods.Patch))
+        svcs.push(resp.createService(ServiceMethods.Update))
+        svcs.push(resp.createService(ServiceMethods.Remove))
+        svcs.push(resp.startServicePublisher())
+        Promise.all(svcs)
       } catch (e) {
         throw new BadRequest(
           "An error occurred creating NATS service subscribers",

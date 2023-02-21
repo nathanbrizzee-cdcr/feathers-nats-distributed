@@ -8,12 +8,17 @@ import {
   SubscriptionOptions,
 } from "nats"
 import { NotFound, MethodNotAllowed, BadRequest } from "@feathersjs/errors"
-import { getServiceName, makeNatsQueueOption } from "../common/helpers"
+import {
+  getServiceName,
+  makeNatsQueueOption,
+  makeNatsPubSubjectName,
+} from "../common/helpers"
 import {
   ServiceMethods,
   Reply,
   ServiceActions,
   ServiceTypes,
+  InitConfig,
 } from "../common/types"
 import { jsonCodec } from "../instance"
 import Debug from "debug"
@@ -21,23 +26,107 @@ const debug = Debug("feathers-nats-distributed:server:response-handler")
 export default class natsResponse {
   private app: any // FeathersJS app object
   private nats: NatsConnection
-  private appName: string
+  private config: InitConfig
+  /**List of services in this server.  loaded at class creation */
+  private allServices: string[]
   private Services: string[]
+  private timer: any
 
-  constructor(app: any, appName: string, nats: NatsConnection) {
+  constructor(app: any, config: InitConfig, nats: NatsConnection) {
     this.app = app
-    this.appName = appName
+    this.config = Object.assign({}, config) // make a copy of the config
     this.nats = nats
-    this.Services = Object.keys(app.services)
+    this.allServices = Object.keys(app.services)
+    this.Services = this.allServices
+    this.timer = null
+    if (
+      this.config.servicePublisher?.publishServices === true &&
+      this.config.servicePublisher?.servicesIgnoreList
+    ) {
+      // Sanitize ignore service list if it exists
+      for (
+        let cnt = 0;
+        cnt < this.config.servicePublisher.servicesIgnoreList.length;
+        cnt++
+      ) {
+        if (
+          this.config.servicePublisher.servicesIgnoreList[cnt].startsWith("/")
+        ) {
+          this.config.servicePublisher.servicesIgnoreList[cnt] =
+            this.config.servicePublisher.servicesIgnoreList[cnt].replace(
+              "/",
+              ""
+            )
+        }
+      }
+      this.Services = [] // clear the list so we can reload it
+      // Check if any of the registered services are listed to be ignored
+      this.allServices.forEach(serviceName => {
+        const found = this.config.servicePublisher?.servicesIgnoreList?.some(
+          item => item === serviceName
+        )
+        // If not found in the ignore list, add it to the services list
+        if (!found) {
+          this.Services.push(serviceName)
+        }
+      })
+    }
+  }
+  public static getRandomInt(min: number = 1, max: number = 360000) {
+    min = Math.ceil(Math.max(min, 1))
+    max = Math.floor(Math.min(max, 360000))
+    return Math.floor(Math.random() * (max - min) + min) // The maximum is exclusive and the minimum is inclusive
   }
 
+  public async startServicePublisher(): Promise<void> {
+    if (this.config.servicePublisher?.publishServices === true) {
+      const randDelaySecs = natsResponse.getRandomInt(5000, 10000)
+      const fixedDelaySecs =
+        Math.max(this.config.servicePublisher?.publishDelay || 1000, 1000) ||
+        60000
+      debug(
+        `Waiting ${randDelaySecs} seconds to start publishling services; then publishing every ${fixedDelaySecs} seconds`
+      )
+      const self = this
+      self.timer = setTimeout(async function myTimer(): Promise<void> {
+        await self._publishServices(self)
+        self.timer = setTimeout(myTimer, fixedDelaySecs)
+      }, randDelaySecs)
+    }
+  }
+
+  private async _publishServices(self: any): Promise<void> {
+    try {
+      const serviceActions: ServiceActions = {
+        servicePath: "",
+        serverName: self.config.appName,
+        methodName: ServiceMethods.Unknown,
+        serviceType: ServiceTypes.ServiceList,
+      }
+      const subject = makeNatsPubSubjectName(serviceActions)
+      const msg: Object = { services: self.Services }
+      debug(
+        `Publishling service list to NATS subject ${subject}, ${JSON.stringify(
+          msg
+        )}`
+      )
+      await self.nats.publish(subject, jsonCodec.encode(msg))
+    } catch (e) {
+      debug(e)
+      throw e
+    }
+  }
+  /**
+   * Creates a new service handler for a service method
+   * @param serviceMethod Which service method to create a listener for
+   */
   public async createService(
     serviceMethod: ServiceMethods
   ): Promise<Subscription> {
     const queueOpts: SubscriptionOptions = {
       queue: makeNatsQueueOption({
         serviceType: ServiceTypes.Service,
-        serverName: this.appName,
+        serverName: this.config.appName,
         methodName: serviceMethod,
         servicePath: "",
       }),
@@ -113,21 +202,19 @@ export default class natsResponse {
           if (m.respond(jsonCodec.encode(reply))) {
             debug(
               `[${
-                this.appName
+                this.config.appName
               }] reply #${sub.getProcessed()} => ${JSON.stringify(reply)}`
             )
           } else {
             debug(
               `[${
-                this.appName
+                this.config.appName
               }] #${sub.getProcessed()} ignoring request - no reply subject`
             )
           }
         } catch (err: any) {
           delete err.hook
           debug(err)
-          //const newErr = this.wrapError(err)
-          //debug(newErr)
           delete err.stack
           if (
             err.code &&
@@ -141,13 +228,13 @@ export default class natsResponse {
           if (m.respond(jsonCodec.encode(errObj))) {
             debug(
               `[${
-                this.appName
+                this.config.appName
               }] reply #${sub.getProcessed()} => ${JSON.stringify(errObj)}`
             )
           } else {
             debug(
               `[${
-                this.appName
+                this.config.appName
               }] #${sub.getProcessed()} ignoring request - no reply subject`
             )
           }

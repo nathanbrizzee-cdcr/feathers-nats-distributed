@@ -16,5 +16,6 @@ var ServiceTypes;
     ServiceTypes["Unknown"] = "";
     ServiceTypes["Service"] = "service";
     ServiceTypes["Event"] = "event";
+    ServiceTypes["ServiceList"] = "servicelist";
 })(ServiceTypes = exports.ServiceTypes || (exports.ServiceTypes = {}));
 //# sourceMappingURL=types.js.map

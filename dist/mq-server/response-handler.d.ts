@@ -1,10 +1,15 @@
 import { NatsConnection, Subscription } from "nats";
-import { ServiceMethods } from "../common/types";
+import { ServiceMethods, InitConfig } from "../common/types";
 export default class natsResponse {
     private app;
     private nats;
-    private appName;
+    private config;
+    private allServices;
     private Services;
-    constructor(app: any, appName: string, nats: NatsConnection);
+    private timer;
+    constructor(app: any, config: InitConfig, nats: NatsConnection);
+    static getRandomInt(min?: number, max?: number): number;
+    startServicePublisher(): Promise<void>;
+    private _publishServices;
     createService(serviceMethod: ServiceMethods): Promise<Subscription>;
 }

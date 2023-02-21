@@ -42,6 +42,19 @@ const getServiceName = function (natsSubject: string): ServiceActions {
   }
   return serviceActions
 }
+
+const makeNatsPubSubjectName = function (serviceActions: ServiceActions) {
+  let newServicename = serviceActions.servicePath
+
+  if (serviceActions.servicePath.startsWith("/")) {
+    newServicename = serviceActions.servicePath.replace("/", "")
+  }
+  newServicename = sanitizeServiceName(newServicename)
+  let newServerName = sanitizeAppName(serviceActions.serverName)
+  const subject = `${serviceActions.serviceType}.${newServerName}`
+  return subject
+}
+
 const makeNatsSubjectName = function (serviceActions: ServiceActions) {
   let newServicename = serviceActions.servicePath
 
@@ -68,5 +81,6 @@ export {
   getServiceName,
   sanitizeServiceName,
   makeNatsSubjectName,
+  makeNatsPubSubjectName,
   makeNatsQueueOption,
 }

@@ -33,15 +33,16 @@ const Server = function (config) {
                     app.set("NatsInstance", nats);
                 }
                 try {
-                    const conns = [];
-                    const resp = new response_handler_1.default(app, config.appName, nats);
-                    conns.push(resp.createService(types_1.ServiceMethods.Find));
-                    conns.push(resp.createService(types_1.ServiceMethods.Get));
-                    conns.push(resp.createService(types_1.ServiceMethods.Create));
-                    conns.push(resp.createService(types_1.ServiceMethods.Patch));
-                    conns.push(resp.createService(types_1.ServiceMethods.Update));
-                    conns.push(resp.createService(types_1.ServiceMethods.Remove));
-                    Promise.all(conns);
+                    const svcs = [];
+                    const resp = new response_handler_1.default(app, config, nats);
+                    svcs.push(resp.createService(types_1.ServiceMethods.Find));
+                    svcs.push(resp.createService(types_1.ServiceMethods.Get));
+                    svcs.push(resp.createService(types_1.ServiceMethods.Create));
+                    svcs.push(resp.createService(types_1.ServiceMethods.Patch));
+                    svcs.push(resp.createService(types_1.ServiceMethods.Update));
+                    svcs.push(resp.createService(types_1.ServiceMethods.Remove));
+                    svcs.push(resp.startServicePublisher());
+                    Promise.all(svcs);
                 }
                 catch (e) {
                     throw new errors_1.BadRequest("An error occurred creating NATS service subscribers", e);

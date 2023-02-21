@@ -26,18 +26,81 @@ const instance_1 = require("../instance");
 const debug_1 = __importDefault(require("debug"));
 const debug = (0, debug_1.default)("feathers-nats-distributed:server:response-handler");
 class natsResponse {
-    constructor(app, appName, nats) {
+    constructor(app, config, nats) {
+        var _a, _b;
         this.app = app;
-        this.appName = appName;
+        this.config = Object.assign({}, config);
         this.nats = nats;
-        this.Services = Object.keys(app.services);
+        this.allServices = Object.keys(app.services);
+        this.Services = this.allServices;
+        this.timer = null;
+        if (((_a = this.config.servicePublisher) === null || _a === void 0 ? void 0 : _a.publishServices) === true &&
+            ((_b = this.config.servicePublisher) === null || _b === void 0 ? void 0 : _b.servicesIgnoreList)) {
+            for (let cnt = 0; cnt < this.config.servicePublisher.servicesIgnoreList.length; cnt++) {
+                if (this.config.servicePublisher.servicesIgnoreList[cnt].startsWith("/")) {
+                    this.config.servicePublisher.servicesIgnoreList[cnt] =
+                        this.config.servicePublisher.servicesIgnoreList[cnt].replace("/", "");
+                }
+            }
+            this.Services = [];
+            this.allServices.forEach(serviceName => {
+                var _a, _b;
+                const found = (_b = (_a = this.config.servicePublisher) === null || _a === void 0 ? void 0 : _a.servicesIgnoreList) === null || _b === void 0 ? void 0 : _b.some(item => item === serviceName);
+                if (!found) {
+                    this.Services.push(serviceName);
+                }
+            });
+        }
+    }
+    static getRandomInt(min = 1, max = 360000) {
+        min = Math.ceil(Math.max(min, 1));
+        max = Math.floor(Math.min(max, 360000));
+        return Math.floor(Math.random() * (max - min) + min);
+    }
+    startServicePublisher() {
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function* () {
+            if (((_a = this.config.servicePublisher) === null || _a === void 0 ? void 0 : _a.publishServices) === true) {
+                const randDelaySecs = natsResponse.getRandomInt(5000, 10000);
+                const fixedDelaySecs = Math.max(((_b = this.config.servicePublisher) === null || _b === void 0 ? void 0 : _b.publishDelay) || 1000, 1000) ||
+                    60000;
+                debug(`Waiting ${randDelaySecs} seconds to start publishling services; then publishing every ${fixedDelaySecs} seconds`);
+                const self = this;
+                self.timer = setTimeout(function myTimer() {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        yield self._publishServices(self);
+                        self.timer = setTimeout(myTimer, fixedDelaySecs);
+                    });
+                }, randDelaySecs);
+            }
+        });
+    }
+    _publishServices(self) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const serviceActions = {
+                    servicePath: "",
+                    serverName: self.config.appName,
+                    methodName: types_1.ServiceMethods.Unknown,
+                    serviceType: types_1.ServiceTypes.ServiceList,
+                };
+                const subject = (0, helpers_1.makeNatsPubSubjectName)(serviceActions);
+                const msg = { services: self.Services };
+                debug(`Publishling service list to NATS subject ${subject}, ${JSON.stringify(msg)}`);
+                yield self.nats.publish(subject, instance_1.jsonCodec.encode(msg));
+            }
+            catch (e) {
+                debug(e);
+                throw e;
+            }
+        });
     }
     createService(serviceMethod) {
         return __awaiter(this, void 0, void 0, function* () {
             const queueOpts = {
                 queue: (0, helpers_1.makeNatsQueueOption)({
                     serviceType: types_1.ServiceTypes.Service,
-                    serverName: this.appName,
+                    serverName: this.config.appName,
                     methodName: serviceMethod,
                     servicePath: "",
                 }),
@@ -101,10 +164,10 @@ class natsResponse {
                                 }
                                 const reply = { data: result };
                                 if (m.respond(instance_1.jsonCodec.encode(reply))) {
-                                    debug(`[${this.appName}] reply #${sub.getProcessed()} => ${JSON.stringify(reply)}`);
+                                    debug(`[${this.config.appName}] reply #${sub.getProcessed()} => ${JSON.stringify(reply)}`);
                                 }
                                 else {
-                                    debug(`[${this.appName}] #${sub.getProcessed()} ignoring request - no reply subject`);
+                                    debug(`[${this.config.appName}] #${sub.getProcessed()} ignoring request - no reply subject`);
                                 }
                             }
                             catch (err) {
@@ -119,10 +182,10 @@ class natsResponse {
                                 }
                                 const errObj = { error: err };
                                 if (m.respond(instance_1.jsonCodec.encode(errObj))) {
-                                    debug(`[${this.appName}] reply #${sub.getProcessed()} => ${JSON.stringify(errObj)}`);
+                                    debug(`[${this.config.appName}] reply #${sub.getProcessed()} => ${JSON.stringify(errObj)}`);
                                 }
                                 else {
-                                    debug(`[${this.appName}] #${sub.getProcessed()} ignoring request - no reply subject`);
+                                    debug(`[${this.config.appName}] #${sub.getProcessed()} ignoring request - no reply subject`);
                                 }
                             }
                         }

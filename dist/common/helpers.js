@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.makeNatsQueueOption = exports.makeNatsSubjectName = exports.sanitizeServiceName = exports.getServiceName = exports.sanitizeAppName = void 0;
+exports.makeNatsQueueOption = exports.makeNatsPubSubjectName = exports.makeNatsSubjectName = exports.sanitizeServiceName = exports.getServiceName = exports.sanitizeAppName = void 0;
 const types_1 = require("./types");
 const sanitizeAppName = function (appName) {
     const newAppName = appName.replace(/@/g, "").replace(/[&\/\\#,+()$%.'":*?<>{}]/g, "-") || "";
@@ -28,6 +28,17 @@ const getServiceName = function (natsSubject) {
     return serviceActions;
 };
 exports.getServiceName = getServiceName;
+const makeNatsPubSubjectName = function (serviceActions) {
+    let newServicename = serviceActions.servicePath;
+    if (serviceActions.servicePath.startsWith("/")) {
+        newServicename = serviceActions.servicePath.replace("/", "");
+    }
+    newServicename = sanitizeServiceName(newServicename);
+    let newServerName = sanitizeAppName(serviceActions.serverName);
+    const subject = `${serviceActions.serviceType}.${newServerName}`;
+    return subject;
+};
+exports.makeNatsPubSubjectName = makeNatsPubSubjectName;
 const makeNatsSubjectName = function (serviceActions) {
     let newServicename = serviceActions.servicePath;
     if (serviceActions.servicePath.startsWith("/")) {
