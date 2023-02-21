@@ -13,6 +13,8 @@ import { FeathersError } from "@feathersjs/errors"
 export type InitConfig = {
   /**The name of this server. Usually package.json.name */
   appName: string
+  /**The version of this server.  Usually package.json.version */
+  appVersion: string
   /**A NATS connection object */
   natsConfig: ConnectionOptions
   /** Configuration for a server to publish a list of its services */

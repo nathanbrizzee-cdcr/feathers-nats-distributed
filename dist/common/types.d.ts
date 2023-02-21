@@ -3,6 +3,7 @@ import type { NullableId, Params } from "@feathersjs/feathers";
 import { FeathersError } from "@feathersjs/errors";
 export type InitConfig = {
     appName: string;
+    appVersion: string;
     natsConfig: ConnectionOptions;
     servicePublisher?: {
         publishServices: boolean;

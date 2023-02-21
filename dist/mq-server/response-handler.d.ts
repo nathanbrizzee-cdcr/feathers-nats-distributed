@@ -7,9 +7,11 @@ export default class natsResponse {
     private allServices;
     private Services;
     private timer;
+    private serverInfo;
     constructor(app: any, config: InitConfig, nats: NatsConnection);
     static getRandomInt(min?: number, max?: number): number;
     startServicePublisher(): Promise<void>;
+    stopServicePublisher(): void;
     private _publishServices;
     createService(serviceMethod: ServiceMethods): Promise<Subscription>;
 }

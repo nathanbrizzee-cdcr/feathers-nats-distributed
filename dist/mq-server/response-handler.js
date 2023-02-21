@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -23,17 +46,27 @@ const errors_1 = require("@feathersjs/errors");
 const helpers_1 = require("../common/helpers");
 const types_1 = require("../common/types");
 const instance_1 = require("../instance");
+const short = __importStar(require("short-uuid"));
 const debug_1 = __importDefault(require("debug"));
 const debug = (0, debug_1.default)("feathers-nats-distributed:server:response-handler");
 class natsResponse {
     constructor(app, config, nats) {
         var _a, _b;
+        this.serverInfo = {
+            name: "",
+            version: "",
+            id: "",
+        };
         this.app = app;
         this.config = Object.assign({}, config);
         this.nats = nats;
         this.allServices = Object.keys(app.services);
         this.Services = this.allServices;
         this.timer = null;
+        this.serverInfo.name = this.config.appName;
+        this.serverInfo.version = this.config.appVersion;
+        this.serverInfo.id = short.generate();
+        debug(`Server Info: ${JSON.stringify(this.serverInfo)}`);
         if (((_a = this.config.servicePublisher) === null || _a === void 0 ? void 0 : _a.publishServices) === true &&
             ((_b = this.config.servicePublisher) === null || _b === void 0 ? void 0 : _b.servicesIgnoreList)) {
             for (let cnt = 0; cnt < this.config.servicePublisher.servicesIgnoreList.length; cnt++) {
@@ -62,7 +95,7 @@ class natsResponse {
         return __awaiter(this, void 0, void 0, function* () {
             if (((_a = this.config.servicePublisher) === null || _a === void 0 ? void 0 : _a.publishServices) === true) {
                 const randDelaySecs = natsResponse.getRandomInt(5000, 10000);
-                const fixedDelaySecs = Math.max(((_b = this.config.servicePublisher) === null || _b === void 0 ? void 0 : _b.publishDelay) || 1000, 1000) ||
+                const fixedDelaySecs = Math.max(((_b = this.config.servicePublisher) === null || _b === void 0 ? void 0 : _b.publishDelay) || 60000, 1000) ||
                     60000;
                 debug(`Waiting ${randDelaySecs} seconds to start publishling services; then publishing every ${fixedDelaySecs} seconds`);
                 const self = this;
@@ -75,6 +108,15 @@ class natsResponse {
             }
         });
     }
+    stopServicePublisher() {
+        var _a;
+        if (((_a = this.config.servicePublisher) === null || _a === void 0 ? void 0 : _a.publishServices) === true) {
+            if (this.timer) {
+                clearTimeout(this.timer);
+                this.timer = null;
+            }
+        }
+    }
     _publishServices(self) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -85,9 +127,17 @@ class natsResponse {
                     serviceType: types_1.ServiceTypes.ServiceList,
                 };
                 const subject = (0, helpers_1.makeNatsPubSubjectName)(serviceActions);
-                const msg = { services: self.Services };
+                const msg = {
+                    serverInfo: self.serverInfo,
+                    services: self.Services,
+                };
                 debug(`Publishling service list to NATS subject ${subject}, ${JSON.stringify(msg)}`);
-                yield self.nats.publish(subject, instance_1.jsonCodec.encode(msg));
+                if (self.nats && !self.nats.isDraining() && !self.nats.isClosed()) {
+                    yield self.nats.publish(subject, instance_1.jsonCodec.encode(msg));
+                }
+                else {
+                    debug("NATS connecton is draining or is closed");
+                }
             }
             catch (e) {
                 debug(e);

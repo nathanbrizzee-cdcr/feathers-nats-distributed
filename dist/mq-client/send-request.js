@@ -35,21 +35,33 @@ function sendRequest(sendRequestScope) {
             timeout: 20000,
         };
         try {
-            const response = yield nats.request(subject, instance_1.jsonCodec.encode(request), opts);
-            if (response instanceof nats_1.NatsError && response.code === nats_1.ErrorCode.Timeout) {
-                throw new errors_1.BadRequest("Request timed out on feathers-mq.", serviceActions);
+            if (nats && !nats.isDraining() && !nats.isClosed()) {
+                const response = yield nats.request(subject, instance_1.jsonCodec.encode(request), opts);
+                if (response instanceof nats_1.NatsError &&
+                    response.code === nats_1.ErrorCode.Timeout) {
+                    throw new errors_1.BadRequest("Request timed out on feathers-nats-distributed.", serviceActions);
+                }
+                const decodedData = instance_1.jsonCodec.decode(response.data);
+                const reply = {
+                    data: decodedData.data,
+                    headers: decodedData.headers,
+                    error: decodedData.error,
+                };
+                if (reply.error) {
+                    debug(reply.error);
+                    throw new errors_1.FeathersError(reply.error.message, reply.error.name, reply.error.code, reply.error.className, {});
+                }
+                return reply;
             }
-            const decodedData = instance_1.jsonCodec.decode(response.data);
-            const reply = {
-                data: decodedData.data,
-                headers: decodedData.headers,
-                error: decodedData.error,
-            };
-            if (reply.error) {
-                debug(reply.error);
-                throw new errors_1.FeathersError(reply.error.message, reply.error.name, reply.error.code, reply.error.className, {});
+            else {
+                debug("NATS is draining or is closed.");
+                const reply = {
+                    data: undefined,
+                    headers: undefined,
+                    error: new errors_1.BadRequest("NATS server is draining or closed"),
+                };
+                return reply;
             }
-            return reply;
         }
         catch (err) {
             switch (err.code) {

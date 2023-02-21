@@ -41,33 +41,49 @@ export async function sendRequest(
     timeout: 20000,
   }
   try {
-    const response = await nats.request(
-      subject,
-      jsonCodec.encode(request),
-      opts
-    )
-    if (response instanceof NatsError && response.code === ErrorCode.Timeout) {
-      throw new BadRequest("Request timed out on feathers-mq.", serviceActions)
-    }
-    const decodedData: any = jsonCodec.decode(response.data)
-    // debug(`Received reply ${decodedData}`)
-
-    const reply: Reply = {
-      data: decodedData.data,
-      headers: decodedData.headers,
-      error: decodedData.error,
-    }
-    if (reply.error) {
-      debug(reply.error)
-      throw new FeathersError(
-        reply.error.message,
-        reply.error.name,
-        reply.error.code,
-        reply.error.className,
-        {}
+    if (nats && !nats.isDraining() && !nats.isClosed()) {
+      const response = await nats.request(
+        subject,
+        jsonCodec.encode(request),
+        opts
       )
+      if (
+        response instanceof NatsError &&
+        response.code === ErrorCode.Timeout
+      ) {
+        throw new BadRequest(
+          "Request timed out on feathers-nats-distributed.",
+          serviceActions
+        )
+      }
+      const decodedData: any = jsonCodec.decode(response.data)
+      // debug(`Received reply ${decodedData}`)
+
+      const reply: Reply = {
+        data: decodedData.data,
+        headers: decodedData.headers,
+        error: decodedData.error,
+      }
+      if (reply.error) {
+        debug(reply.error)
+        throw new FeathersError(
+          reply.error.message,
+          reply.error.name,
+          reply.error.code,
+          reply.error.className,
+          {}
+        )
+      }
+      return reply
+    } else {
+      debug("NATS is draining or is closed.")
+      const reply: Reply = {
+        data: undefined,
+        headers: undefined,
+        error: new BadRequest("NATS server is draining or closed"),
+      }
+      return reply
     }
-    return reply
   } catch (err: any) {
     switch (err.code) {
       case ErrorCode.NoResponders:

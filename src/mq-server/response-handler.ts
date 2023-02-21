@@ -21,6 +21,8 @@ import {
   InitConfig,
 } from "../common/types"
 import { jsonCodec } from "../instance"
+import * as short from "short-uuid"
+
 import Debug from "debug"
 const debug = Debug("feathers-nats-distributed:server:response-handler")
 export default class natsResponse {
@@ -31,6 +33,11 @@ export default class natsResponse {
   private allServices: string[]
   private Services: string[]
   private timer: any
+  private serverInfo = {
+    name: "",
+    version: "",
+    id: "",
+  }
 
   constructor(app: any, config: InitConfig, nats: NatsConnection) {
     this.app = app
@@ -39,6 +46,11 @@ export default class natsResponse {
     this.allServices = Object.keys(app.services)
     this.Services = this.allServices
     this.timer = null
+    this.serverInfo.name = this.config.appName
+    this.serverInfo.version = this.config.appVersion
+    this.serverInfo.id = short.generate()
+    debug(`Server Info: ${JSON.stringify(this.serverInfo)}`)
+
     if (
       this.config.servicePublisher?.publishServices === true &&
       this.config.servicePublisher?.servicesIgnoreList
@@ -82,7 +94,7 @@ export default class natsResponse {
     if (this.config.servicePublisher?.publishServices === true) {
       const randDelaySecs = natsResponse.getRandomInt(5000, 10000)
       const fixedDelaySecs =
-        Math.max(this.config.servicePublisher?.publishDelay || 1000, 1000) ||
+        Math.max(this.config.servicePublisher?.publishDelay || 60000, 1000) ||
         60000
       debug(
         `Waiting ${randDelaySecs} seconds to start publishling services; then publishing every ${fixedDelaySecs} seconds`
@@ -95,6 +107,15 @@ export default class natsResponse {
     }
   }
 
+  public stopServicePublisher(): void {
+    if (this.config.servicePublisher?.publishServices === true) {
+      if (this.timer) {
+        clearTimeout(this.timer)
+        this.timer = null
+      }
+    }
+  }
+
   private async _publishServices(self: any): Promise<void> {
     try {
       const serviceActions: ServiceActions = {
@@ -104,13 +125,20 @@ export default class natsResponse {
         serviceType: ServiceTypes.ServiceList,
       }
       const subject = makeNatsPubSubjectName(serviceActions)
-      const msg: Object = { services: self.Services }
+      const msg: Object = {
+        serverInfo: self.serverInfo,
+        services: self.Services,
+      }
       debug(
         `Publishling service list to NATS subject ${subject}, ${JSON.stringify(
           msg
         )}`
       )
-      await self.nats.publish(subject, jsonCodec.encode(msg))
+      if (self.nats && !self.nats.isDraining() && !self.nats.isClosed()) {
+        await self.nats.publish(subject, jsonCodec.encode(msg))
+      } else {
+        debug("NATS connecton is draining or is closed")
+      }
     } catch (e) {
       debug(e)
       throw e

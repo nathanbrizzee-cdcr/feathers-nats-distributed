@@ -33,7 +33,8 @@
     "@feathersjs/feathers": "^5.0.0-pre.36",
     "@feathersjs/koa": "^5.0.0-pre.36",
     "debug": "^4.3.4",
-    "nats": "^2.12.0"
+    "nats": "^2.12.0",
+    "short-uuid": "^4.2.2"
   },
   "devDependencies": {
     "@types/debug": "~4.1.7",
