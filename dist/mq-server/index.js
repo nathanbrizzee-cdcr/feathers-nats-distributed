@@ -13,7 +13,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Server = void 0;
+const debug_1 = __importDefault(require("debug"));
+const debug = (0, debug_1.default)("feathers-nats-distributed:server:index");
 const errors_1 = require("@feathersjs/errors");
+const short_unique_id_1 = __importDefault(require("short-unique-id"));
 const instance_1 = require("../instance");
 const helpers_1 = require("../common/helpers");
 const types_1 = require("../common/types");
@@ -29,6 +32,11 @@ const Server = function (config) {
                 }
                 config.appName = (0, helpers_1.sanitizeAppName)(config.appName);
                 nats = yield (0, instance_1.getInstance)(config.natsConfig);
+                if (!config.appInstanceID) {
+                    const uid = new short_unique_id_1.default({ length: 10 });
+                    config.appInstanceID = uid();
+                }
+                debug(`Server: ${JSON.stringify(config)} is starting up`);
                 if (!app.get("NatsInstance")) {
                     app.set("NatsInstance", nats);
                 }

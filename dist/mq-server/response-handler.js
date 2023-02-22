@@ -1,27 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -46,27 +23,22 @@ const errors_1 = require("@feathersjs/errors");
 const helpers_1 = require("../common/helpers");
 const types_1 = require("../common/types");
 const instance_1 = require("../instance");
-const short = __importStar(require("short-uuid"));
 const debug_1 = __importDefault(require("debug"));
 const debug = (0, debug_1.default)("feathers-nats-distributed:server:response-handler");
 class natsResponse {
     constructor(app, config, nats) {
         var _a, _b;
-        this.serverInfo = {
-            name: "",
-            version: "",
-            id: "",
-        };
         this.app = app;
         this.config = Object.assign({}, config);
         this.nats = nats;
         this.allServices = Object.keys(app.services);
         this.Services = this.allServices;
         this.timer = null;
-        this.serverInfo.name = this.config.appName;
-        this.serverInfo.version = this.config.appVersion;
-        this.serverInfo.id = short.generate();
-        debug(`Server Info: ${JSON.stringify(this.serverInfo)}`);
+        this.serverInfo = {
+            name: this.config.appName,
+            version: this.config.appVersion,
+            id: this.config.appInstanceID,
+        };
         if (((_a = this.config.servicePublisher) === null || _a === void 0 ? void 0 : _a.publishServices) === true &&
             ((_b = this.config.servicePublisher) === null || _b === void 0 ? void 0 : _b.servicesIgnoreList)) {
             for (let cnt = 0; cnt < this.config.servicePublisher.servicesIgnoreList.length; cnt++) {
@@ -131,7 +103,6 @@ class natsResponse {
                     serverInfo: self.serverInfo,
                     services: self.Services,
                 };
-                debug(`Publishling service list to NATS subject ${subject}, ${JSON.stringify(msg)}`);
                 if (self.nats && !self.nats.isDraining() && !self.nats.isClosed()) {
                     yield self.nats.publish(subject, instance_1.jsonCodec.encode(msg));
                 }
@@ -175,8 +146,9 @@ class natsResponse {
                                     throw new errors_1.MethodNotAllowed(`Method \`${svcInfo.methodName}\` is not supported by this endpoint.`);
                                 }
                                 let result;
-                                const request = instance_1.jsonCodec.decode(m.data);
-                                debug(JSON.stringify({ svcInfo, request }, null, 2));
+                                const data = instance_1.jsonCodec.decode(m.data);
+                                debug(JSON.stringify({ svcInfo, reply: data }));
+                                const request = data.request;
                                 switch (serviceMethod) {
                                     case types_1.ServiceMethods.Find:
                                         result = yield this.app
@@ -212,7 +184,7 @@ class natsResponse {
                                         result = {};
                                         break;
                                 }
-                                const reply = { data: result };
+                                const reply = { data: result, serverInfo: this.serverInfo };
                                 if (m.respond(instance_1.jsonCodec.encode(reply))) {
                                     debug(`[${this.config.appName}] reply #${sub.getProcessed()} => ${JSON.stringify(reply)}`);
                                 }
@@ -230,7 +202,7 @@ class natsResponse {
                                     err = new errors_1.BadRequest("Invalid JSON request received");
                                     debug(err);
                                 }
-                                const errObj = { error: err };
+                                const errObj = { error: err, serverInfo: this.serverInfo };
                                 if (m.respond(instance_1.jsonCodec.encode(errObj))) {
                                     debug(`[${this.config.appName}] reply #${sub.getProcessed()} => ${JSON.stringify(errObj)}`);
                                 }

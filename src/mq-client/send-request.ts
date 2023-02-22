@@ -26,7 +26,7 @@ import {
 export async function sendRequest(
   sendRequestScope: SendRequestScope
 ): Promise<Reply> {
-  const { nats, request } = sendRequestScope
+  const { nats, request, serverInfo } = sendRequestScope
 
   const serviceActions: ServiceActions = {
     servicePath: sendRequestScope.serviceName,
@@ -42,11 +42,8 @@ export async function sendRequest(
   }
   try {
     if (nats && !nats.isDraining() && !nats.isClosed()) {
-      const response = await nats.request(
-        subject,
-        jsonCodec.encode(request),
-        opts
-      )
+      const msg = { request, serverInfo }
+      const response = await nats.request(subject, jsonCodec.encode(msg), opts)
       if (
         response instanceof NatsError &&
         response.code === ErrorCode.Timeout
@@ -57,12 +54,13 @@ export async function sendRequest(
         )
       }
       const decodedData: any = jsonCodec.decode(response.data)
-      // debug(`Received reply ${decodedData}`)
+      debug(`Received reply ${JSON.stringify(decodedData)}`)
 
       const reply: Reply = {
         data: decodedData.data,
         headers: decodedData.headers,
         error: decodedData.error,
+        serverInfo: decodedData.serverInfo,
       }
       if (reply.error) {
         debug(reply.error)
@@ -78,8 +76,6 @@ export async function sendRequest(
     } else {
       debug("NATS is draining or is closed.")
       const reply: Reply = {
-        data: undefined,
-        headers: undefined,
         error: new BadRequest("NATS server is draining or closed"),
       }
       return reply
@@ -87,9 +83,11 @@ export async function sendRequest(
   } catch (err: any) {
     switch (err.code) {
       case ErrorCode.NoResponders:
-        throw new Unavailable(`no one is listening to ${subject}`)
+        //throw new Unavailable(`no one is listening to ${subject}`)
+        throw new Unavailable(`No listeners subscribed to ${subject}`)
       case ErrorCode.Timeout:
-        throw new Timeout("someone is listening but didn't respond")
+        //throw new Timeout("someone is listening but didn't respond")
+        throw new Timeout("NATS service call timed out")
       default:
         throw err
     }

@@ -19,9 +19,10 @@ import {
   ServiceActions,
   ServiceTypes,
   InitConfig,
+  ServerInfo,
+  RequestParams,
 } from "../common/types"
 import { jsonCodec } from "../instance"
-import * as short from "short-uuid"
 
 import Debug from "debug"
 const debug = Debug("feathers-nats-distributed:server:response-handler")
@@ -33,11 +34,7 @@ export default class natsResponse {
   private allServices: string[]
   private Services: string[]
   private timer: any
-  private serverInfo = {
-    name: "",
-    version: "",
-    id: "",
-  }
+  private serverInfo: ServerInfo
 
   constructor(app: any, config: InitConfig, nats: NatsConnection) {
     this.app = app
@@ -46,10 +43,11 @@ export default class natsResponse {
     this.allServices = Object.keys(app.services)
     this.Services = this.allServices
     this.timer = null
-    this.serverInfo.name = this.config.appName
-    this.serverInfo.version = this.config.appVersion
-    this.serverInfo.id = short.generate()
-    debug(`Server Info: ${JSON.stringify(this.serverInfo)}`)
+    this.serverInfo = {
+      name: this.config.appName,
+      version: this.config.appVersion,
+      id: this.config.appInstanceID as string,
+    }
 
     if (
       this.config.servicePublisher?.publishServices === true &&
@@ -129,11 +127,11 @@ export default class natsResponse {
         serverInfo: self.serverInfo,
         services: self.Services,
       }
-      debug(
-        `Publishling service list to NATS subject ${subject}, ${JSON.stringify(
-          msg
-        )}`
-      )
+      // debug(
+      //   `Publishling service list to NATS subject ${subject}, ${JSON.stringify(
+      //     msg
+      //   )}`
+      // )
       if (self.nats && !self.nats.isDraining() && !self.nats.isClosed()) {
         await self.nats.publish(subject, jsonCodec.encode(msg))
       } else {
@@ -167,7 +165,7 @@ export default class natsResponse {
       for await (const m of sub) {
         try {
           const svcInfo: ServiceActions = getServiceName(m.subject)
-
+          // debug(svcInfo)
           // check if service is registered
           if (!this.Services.includes(svcInfo.servicePath)) {
             throw new NotFound(
@@ -186,8 +184,9 @@ export default class natsResponse {
           }
 
           let result: any
-          const request: any = jsonCodec.decode(m.data)
-          debug(JSON.stringify({ svcInfo, request }, null, 2))
+          const data: any = jsonCodec.decode(m.data)
+          debug(JSON.stringify({ svcInfo, reply: data }))
+          const request = data.request as RequestParams
           switch (serviceMethod) {
             case ServiceMethods.Find:
               result = await this.app
@@ -225,7 +224,7 @@ export default class natsResponse {
               break
           }
 
-          const reply: Reply = { data: result }
+          const reply: Reply = { data: result, serverInfo: this.serverInfo }
           // respond returns true if the message had a reply subject, thus it could respond
           if (m.respond(jsonCodec.encode(reply))) {
             debug(
@@ -252,7 +251,7 @@ export default class natsResponse {
             err = new BadRequest("Invalid JSON request received")
             debug(err)
           }
-          const errObj: Reply = { error: err }
+          const errObj: Reply = { error: err, serverInfo: this.serverInfo }
           if (m.respond(jsonCodec.encode(errObj))) {
             debug(
               `[${

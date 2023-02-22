@@ -22,6 +22,11 @@ class NatsService {
         this.app = app;
         this.nats = nats;
         this.config = config;
+        this.serverInfo = {
+            name: this.config.appName,
+            version: this.config.appVersion,
+            id: this.config.appInstanceID,
+        };
     }
     find(serverName, serviceName, _params) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -29,6 +34,7 @@ class NatsService {
                 appName: serverName,
                 nats: this.nats,
                 app: this.app,
+                serverInfo: this.serverInfo,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Find,
                 request: {
@@ -50,6 +56,7 @@ class NatsService {
                 appName: serverName,
                 nats: this.nats,
                 app: this.app,
+                serverInfo: this.serverInfo,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Get,
                 request: {
@@ -75,6 +82,7 @@ class NatsService {
                 appName: serverName,
                 nats: this.nats,
                 app: this.app,
+                serverInfo: this.serverInfo,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Create,
                 request: {
@@ -97,6 +105,7 @@ class NatsService {
                 appName: serverName,
                 nats: this.nats,
                 app: this.app,
+                serverInfo: this.serverInfo,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Update,
                 request: {
@@ -120,6 +129,7 @@ class NatsService {
                 appName: serverName,
                 nats: this.nats,
                 app: this.app,
+                serverInfo: this.serverInfo,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Patch,
                 request: {
@@ -143,6 +153,7 @@ class NatsService {
                 appName: serverName,
                 nats: this.nats,
                 app: this.app,
+                serverInfo: this.serverInfo,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Remove,
                 request: {

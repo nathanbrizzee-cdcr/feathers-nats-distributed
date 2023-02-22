@@ -22,7 +22,7 @@ const instance_1 = require("../instance");
 const types_1 = require("../common/types");
 function sendRequest(sendRequestScope) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { nats, request } = sendRequestScope;
+        const { nats, request, serverInfo } = sendRequestScope;
         const serviceActions = {
             servicePath: sendRequestScope.serviceName,
             serverName: sendRequestScope.appName,
@@ -36,16 +36,19 @@ function sendRequest(sendRequestScope) {
         };
         try {
             if (nats && !nats.isDraining() && !nats.isClosed()) {
-                const response = yield nats.request(subject, instance_1.jsonCodec.encode(request), opts);
+                const msg = { request, serverInfo };
+                const response = yield nats.request(subject, instance_1.jsonCodec.encode(msg), opts);
                 if (response instanceof nats_1.NatsError &&
                     response.code === nats_1.ErrorCode.Timeout) {
                     throw new errors_1.BadRequest("Request timed out on feathers-nats-distributed.", serviceActions);
                 }
                 const decodedData = instance_1.jsonCodec.decode(response.data);
+                debug(`Received reply ${JSON.stringify(decodedData)}`);
                 const reply = {
                     data: decodedData.data,
                     headers: decodedData.headers,
                     error: decodedData.error,
+                    serverInfo: decodedData.serverInfo,
                 };
                 if (reply.error) {
                     debug(reply.error);
@@ -56,8 +59,6 @@ function sendRequest(sendRequestScope) {
             else {
                 debug("NATS is draining or is closed.");
                 const reply = {
-                    data: undefined,
-                    headers: undefined,
                     error: new errors_1.BadRequest("NATS server is draining or closed"),
                 };
                 return reply;
@@ -66,9 +67,9 @@ function sendRequest(sendRequestScope) {
         catch (err) {
             switch (err.code) {
                 case nats_1.ErrorCode.NoResponders:
-                    throw new errors_1.Unavailable(`no one is listening to ${subject}`);
+                    throw new errors_1.Unavailable(`No listeners subscribed to ${subject}`);
                 case nats_1.ErrorCode.Timeout:
-                    throw new errors_1.Timeout("someone is listening but didn't respond");
+                    throw new errors_1.Timeout("NATS service call timed out");
                 default:
                     throw err;
             }

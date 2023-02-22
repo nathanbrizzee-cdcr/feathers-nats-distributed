@@ -16,6 +16,7 @@ exports.Client = exports.NatsService = void 0;
 const debug_1 = __importDefault(require("debug"));
 const debug = (0, debug_1.default)("feathers-nats-distributed:client:index");
 const errors_1 = require("@feathersjs/errors");
+const short_unique_id_1 = __importDefault(require("short-unique-id"));
 const instance_1 = require("../instance");
 const helpers_1 = require("../common/helpers");
 const service_1 = require("./service");
@@ -34,6 +35,11 @@ const Client = function (config) {
                 if (!app.get("NatsInstance")) {
                     app.set("NatsInstance", nats);
                 }
+                if (!config.appInstanceID) {
+                    const uid = new short_unique_id_1.default({ length: 10 });
+                    config.appInstanceID = uid();
+                }
+                debug(`Client: ${JSON.stringify(config)} is starting up`);
                 try {
                     const svc = new service_1.NatsService(app, nats, config);
                     if (!app.get("NatsService")) {

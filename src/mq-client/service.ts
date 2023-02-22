@@ -11,162 +11,11 @@ import {
   SendRequestScope,
   ServiceMethods,
   Reply,
+  ServerInfo,
 } from "../common/types"
 
 const { sendRequest } = require("./send-request")
 
-// export class NatsService {
-//   app: any
-//   /**
-//    * Feathers Path variable - which is the service name
-//    */
-//   serviceName: string
-//   nats: NatsConnection
-//   config: InitConfig
-//   cookies: any
-//   method: string
-//   url: string
-//   path: string
-//   headers: any
-//   body: any
-//   query: any
-//   querystring: string
-//   constructor(
-//     app: any,
-//     ctx: FeathersKoaContext,
-//     nats: NatsConnection,
-//     config: InitConfig
-//   ) {
-//     this.app = app
-//     this.serviceName = ctx.url
-//     this.cookies = ctx.cookies
-//     this.method = ctx.method.toUpperCase()
-//     this.url = ctx.url
-//     this.path = ctx.path
-//     this.headers = ctx.headers
-//     this.body = ctx.body
-//     this.query = ctx.query
-//     this.querystring = ctx.querystring
-//     this.nats = nats
-//     this.config = config
-//   }
-
-//   async callService() {
-//     debug(this)
-//     switch (this.method) {
-//       case "GET":
-//         break
-//       case "FIND":
-//         break
-//       case "CREATE":
-//         break
-//       case "UPDATE":
-//         break
-//       case "PATCH":
-//         break
-//       case "REMOVE":
-//         break
-//     }
-//   }
-
-//   async find(_params?: Params): Promise<Array<any> | Object | undefined> {
-//     const sendRequestScope: SendRequestScope = {
-//       appName: this.config.appName,
-//       nats: this.nats,
-//       app: this.app,
-//       serviceName: this.serviceName,
-//       methodName: ServiceMethods.Find,
-//       request: { params: _params },
-//     }
-//     const retval: Reply = await sendRequest(sendRequestScope)
-//     return retval.data
-//   }
-
-//   async get(id: Id, _params?: Params): Promise<Object | undefined> {
-//     const sendRequestScope: SendRequestScope = {
-//       appName: this.config.appName,
-//       nats: this.nats,
-//       app: this.app,
-//       serviceName: this.serviceName,
-//       methodName: ServiceMethods.Get,
-//       request: { id: id, params: _params },
-//     }
-
-//     const retval: Reply = await sendRequest(sendRequestScope)
-//     return retval.data
-//   }
-
-//   async create(
-//     data: Object | Array<any>,
-//     params?: Params
-//   ): Promise<Object | undefined> {
-//     if (Array.isArray(data)) {
-//       return Promise.all(data.map(current => this.create(current, params)))
-//     }
-
-//     const sendRequestScope: SendRequestScope = {
-//       appName: this.config.appName,
-//       nats: this.nats,
-//       app: this.app,
-//       serviceName: this.serviceName,
-//       methodName: ServiceMethods.Create,
-//       request: { data: data, params: params },
-//     }
-
-//     const retval: Reply = await sendRequest(sendRequestScope)
-//     return retval.data
-//   }
-
-//   async update(
-//     id: NullableId,
-//     data: Object | Array<any>,
-//     _params?: Params
-//   ): Promise<Object | undefined> {
-//     const sendRequestScope: SendRequestScope = {
-//       appName: this.config.appName,
-//       nats: this.nats,
-//       app: this.app,
-//       serviceName: this.serviceName,
-//       methodName: ServiceMethods.Update,
-//       request: { id: id, data: data, params: _params },
-//     }
-
-//     const retval: Reply = await sendRequest(sendRequestScope)
-//     return retval.data
-//   }
-
-//   async patch(
-//     id: NullableId,
-//     data: Object | Array<any>,
-//     _params?: Params
-//   ): Promise<Object | undefined> {
-//     const sendRequestScope: SendRequestScope = {
-//       appName: this.config.appName,
-//       nats: this.nats,
-//       app: this.app,
-//       serviceName: this.serviceName,
-//       methodName: ServiceMethods.Patch,
-//       request: { id: id, data: data, params: _params },
-//     }
-
-//     const retval: Reply = await sendRequest(sendRequestScope)
-//     return retval.data
-//   }
-
-//   async remove(id: NullableId, _params?: Params): Promise<Object | undefined> {
-//     const sendRequestScope: SendRequestScope = {
-//       appName: this.config.appName,
-//       nats: this.nats,
-//       app: this.app,
-//       serviceName: this.serviceName,
-//       methodName: ServiceMethods.Remove,
-//       request: { id: id, params: _params },
-//     }
-
-//     const retval: Reply = await sendRequest(sendRequestScope)
-//     return retval.data
-//   }
-// }
 export class NatsService {
   app: any
   /**
@@ -174,10 +23,17 @@ export class NatsService {
    */
   nats: NatsConnection
   config: InitConfig
+  serverInfo: ServerInfo
+
   constructor(app: any, nats: NatsConnection, config: InitConfig) {
     this.app = app
     this.nats = nats
     this.config = config
+    this.serverInfo = {
+      name: this.config.appName,
+      version: this.config.appVersion,
+      id: this.config.appInstanceID as string,
+    }
   }
 
   async find(
@@ -189,6 +45,7 @@ export class NatsService {
       appName: serverName,
       nats: this.nats,
       app: this.app,
+      serverInfo: this.serverInfo,
       serviceName: serviceName,
       methodName: ServiceMethods.Find,
       request: {
@@ -214,6 +71,7 @@ export class NatsService {
       appName: serverName,
       nats: this.nats,
       app: this.app,
+      serverInfo: this.serverInfo,
       serviceName: serviceName,
       methodName: ServiceMethods.Get,
       request: {
@@ -249,6 +107,7 @@ export class NatsService {
       appName: serverName,
       nats: this.nats,
       app: this.app,
+      serverInfo: this.serverInfo,
       serviceName: serviceName,
       methodName: ServiceMethods.Create,
       request: {
@@ -277,6 +136,7 @@ export class NatsService {
       appName: serverName,
       nats: this.nats,
       app: this.app,
+      serverInfo: this.serverInfo,
       serviceName: serviceName,
       methodName: ServiceMethods.Update,
       request: {
@@ -306,6 +166,7 @@ export class NatsService {
       appName: serverName,
       nats: this.nats,
       app: this.app,
+      serverInfo: this.serverInfo,
       serviceName: serviceName,
       methodName: ServiceMethods.Patch,
       request: {
@@ -334,6 +195,7 @@ export class NatsService {
       appName: serverName,
       nats: this.nats,
       app: this.app,
+      serverInfo: this.serverInfo,
       serviceName: serviceName,
       methodName: ServiceMethods.Remove,
       request: {

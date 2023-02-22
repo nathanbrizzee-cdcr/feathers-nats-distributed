@@ -4,6 +4,7 @@ import { FeathersError } from "@feathersjs/errors";
 export type InitConfig = {
     appName: string;
     appVersion: string;
+    appInstanceID?: string;
     natsConfig: ConnectionOptions;
     servicePublisher?: {
         publishServices: boolean;
@@ -32,6 +33,11 @@ export declare enum ServiceTypes {
     Event = "event",
     ServiceList = "servicelist"
 }
+export type ServerInfo = {
+    name: string;
+    version: string;
+    id: string;
+};
 export type RequestParams = {
     id?: NullableId;
     params?: Params;
@@ -41,6 +47,7 @@ export type SendRequestScope = {
     appName: string;
     nats: NatsConnection;
     app: any;
+    serverInfo: ServerInfo;
     serviceName: string;
     methodName: ServiceMethods;
     request: RequestParams;
@@ -49,4 +56,5 @@ export type Reply = {
     data?: Object | Array<any>;
     error?: FeathersError;
     headers?: MsgHdrs;
+    serverInfo?: ServerInfo;
 };

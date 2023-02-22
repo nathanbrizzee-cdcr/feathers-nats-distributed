@@ -15,6 +15,8 @@ export type InitConfig = {
   appName: string
   /**The version of this server.  Usually package.json.version */
   appVersion: string
+  /** A unique identifer for this instance of this server.  Will default to a short UUID  */
+  appInstanceID?: string
   /**A NATS connection object */
   natsConfig: ConnectionOptions
   /** Configuration for a server to publish a list of its services */
@@ -70,6 +72,12 @@ export enum ServiceTypes {
   ServiceList = "servicelist",
 }
 
+export type ServerInfo = {
+  name: string
+  version: string
+  id: string
+}
+
 export type RequestParams = {
   id?: NullableId
   params?: Params
@@ -80,6 +88,7 @@ export type SendRequestScope = {
   appName: string
   nats: NatsConnection
   app: any
+  serverInfo: ServerInfo
   serviceName: string
   methodName: ServiceMethods
   request: RequestParams
@@ -89,4 +98,5 @@ export type Reply = {
   data?: Object | Array<any>
   error?: FeathersError
   headers?: MsgHdrs
+  serverInfo?: ServerInfo
 }

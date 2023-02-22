@@ -1,7 +1,8 @@
 "use strict"
 import Debug from "debug"
-// const debug = Debug("feathers-nats-distributed:server:index")
+const debug = Debug("feathers-nats-distributed:server:index")
 import { BadRequest } from "@feathersjs/errors"
+import ShortUniqueId from "short-unique-id"
 import { getInstance, NatsConnection, InitConfig } from "../instance"
 import { sanitizeAppName } from "../common/helpers"
 import { ServiceMethods } from "../common/types"
@@ -20,6 +21,11 @@ const Server = function (config: InitConfig): (this: any) => void {
       // Clean up the appname for NATS
       config.appName = sanitizeAppName(config.appName)
       nats = await getInstance(config.natsConfig)
+      if (!config.appInstanceID) {
+        const uid = new ShortUniqueId({ length: 10 })
+        config.appInstanceID = uid()
+      }
+      debug(`Server: ${JSON.stringify(config)} is starting up`)
       if (!app.get("NatsInstance")) {
         app.set("NatsInstance", nats)
       }
