@@ -95,7 +95,7 @@ export default class natsResponse {
         Math.max(this.config.servicePublisher?.publishDelay || 60000, 1000) ||
         60000
       debug(
-        `Waiting ${randDelaySecs} seconds to start publishling services; then publishing every ${fixedDelaySecs} seconds`
+        `Waiting ${randDelaySecs} ms to start publishling services; then publishing every ${fixedDelaySecs} ms`
       )
       const self = this
       self.timer = setTimeout(async function myTimer(): Promise<void> {

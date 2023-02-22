@@ -69,7 +69,7 @@ class natsResponse {
                 const randDelaySecs = natsResponse.getRandomInt(5000, 10000);
                 const fixedDelaySecs = Math.max(((_b = this.config.servicePublisher) === null || _b === void 0 ? void 0 : _b.publishDelay) || 60000, 1000) ||
                     60000;
-                debug(`Waiting ${randDelaySecs} seconds to start publishling services; then publishing every ${fixedDelaySecs} seconds`);
+                debug(`Waiting ${randDelaySecs} ms to start publishling services; then publishing every ${fixedDelaySecs} ms`);
                 const self = this;
                 self.timer = setTimeout(function myTimer() {
                     return __awaiter(this, void 0, void 0, function* () {
