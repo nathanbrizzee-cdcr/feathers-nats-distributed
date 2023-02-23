@@ -157,7 +157,7 @@ export default class natsResponse {
         servicePath: "",
       }),
     }
-    debug("Creating service subscription queue on ", queueOpts.queue)
+    debug("Creating service subscription queue on", queueOpts.queue)
     // create a subscription - note the option for a queue, if set
     // any client with the same queue will be a member of the receiving group.
     const sub = this.nats.subscribe(<string>queueOpts.queue, queueOpts)
