@@ -16,6 +16,7 @@ export type BaseServerConfig = {
 };
 export type BaseClientConfig = {
     circuitBreakerConfig?: {
+        enabled?: boolean;
         requestTimeout?: number;
         resetTimeout?: number;
         errorThresholdPercentage?: number;

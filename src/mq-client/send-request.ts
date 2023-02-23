@@ -64,6 +64,11 @@ export async function sendRequest(
           )}`
         )
         breaker = new CircuitBreaker(sendGetRequest, circuitBreakerOptions)
+        if (config.circuitBreakerConfig?.enabled === true) {
+          breaker.enable()
+        } else {
+          breaker.disable()
+        }
       }
       let response: any = null
       try {

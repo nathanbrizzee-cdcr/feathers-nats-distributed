@@ -28,7 +28,7 @@ const sendGetRequest = function (nats, subject, jsonMsg, opts) {
 };
 let breaker = null;
 function sendRequest(sendRequestScope) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     return __awaiter(this, void 0, void 0, function* () {
         const { nats, request, serverInfo, config } = sendRequestScope;
         const serviceActions = {
@@ -53,6 +53,12 @@ function sendRequest(sendRequestScope) {
                 if (!breaker) {
                     debug(`Initializing circuit breaker with ${JSON.stringify(circuitBreakerOptions)}`);
                     breaker = new opossum_1.default(sendGetRequest, circuitBreakerOptions);
+                    if (((_d = config.circuitBreakerConfig) === null || _d === void 0 ? void 0 : _d.enabled) === true) {
+                        breaker.enable();
+                    }
+                    else {
+                        breaker.disable();
+                    }
                 }
                 let response = null;
                 try {

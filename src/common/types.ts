@@ -51,6 +51,10 @@ export type BaseServerConfig = {
 }
 export type BaseClientConfig = {
   circuitBreakerConfig?: {
+    /** whether the circuit breaker is enabled or not
+     * @default false
+     */
+    enabled?: boolean
     /**
      * Number of ms for the circuit breaker to wait before failing a call.
      * Note: The Nats service timeout will be set to this amount plus 50 ms
