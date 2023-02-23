@@ -3,14 +3,14 @@ import Debug from "debug"
 const debug = Debug("feathers-nats-distributed:server:index")
 import { BadRequest } from "@feathersjs/errors"
 import ShortUniqueId from "short-unique-id"
-import { getInstance, NatsConnection, InitConfig } from "../instance"
+import { getInstance, NatsConnection } from "../instance"
 import { sanitizeAppName } from "../common/helpers"
-import { ServiceMethods } from "../common/types"
+import { ServiceMethods, ServerConfig } from "../common/types"
 import responses from "./response-handler"
 
 let nats: NatsConnection
 
-const Server = function (config: InitConfig): (this: any) => void {
+const Server = function (config: ServerConfig): (this: any) => void {
   return function mqserver(this: any): void {
     const app: any = this as any
 

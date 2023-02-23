@@ -18,7 +18,7 @@ import {
   Reply,
   ServiceActions,
   ServiceTypes,
-  InitConfig,
+  ServerConfig,
   ServerInfo,
   RequestParams,
 } from "../common/types"
@@ -29,14 +29,14 @@ const debug = Debug("feathers-nats-distributed:server:response-handler")
 export default class natsResponse {
   private app: any // FeathersJS app object
   private nats: NatsConnection
-  private config: InitConfig
+  private config: ServerConfig
   /**List of services in this server.  loaded at class creation */
   private allServices: string[]
   private Services: string[]
   private timer: any
   private serverInfo: ServerInfo
 
-  constructor(app: any, config: InitConfig, nats: NatsConnection) {
+  constructor(app: any, config: ServerConfig, nats: NatsConnection) {
     this.app = app
     this.config = Object.assign({}, config) // make a copy of the config
     this.nats = nats

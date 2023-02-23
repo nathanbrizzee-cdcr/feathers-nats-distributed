@@ -17,12 +17,20 @@ const debug_1 = __importDefault(require("debug"));
 const debug = (0, debug_1.default)("feathers-nats-distributed:client:send-request");
 const errors_1 = require("@feathersjs/errors");
 const nats_1 = require("nats");
+const opossum_1 = __importDefault(require("opossum"));
 const helpers_1 = require("../common/helpers");
 const instance_1 = require("../instance");
 const types_1 = require("../common/types");
-function sendRequest(sendRequestScope) {
+const sendGetRequest = function (nats, subject, jsonMsg, opts) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { nats, request, serverInfo } = sendRequestScope;
+        return yield nats.request(subject, jsonMsg, opts);
+    });
+};
+let breaker = null;
+function sendRequest(sendRequestScope) {
+    var _a, _b, _c;
+    return __awaiter(this, void 0, void 0, function* () {
+        const { nats, request, serverInfo, config } = sendRequestScope;
         const serviceActions = {
             servicePath: sendRequestScope.serviceName,
             serverName: sendRequestScope.appName,
@@ -31,13 +39,31 @@ function sendRequest(sendRequestScope) {
         };
         const subject = (0, helpers_1.makeNatsSubjectName)(serviceActions);
         debug(`Sending Request to NATS queue ${subject}`);
+        const circuitBreakerOptions = {
+            timeout: ((_a = config.circuitBreakerConfig) === null || _a === void 0 ? void 0 : _a.requestTimeout) || 5000,
+            errorThresholdPercentage: ((_b = config.circuitBreakerConfig) === null || _b === void 0 ? void 0 : _b.errorThresholdPercentage) || 50,
+            resetTimeout: ((_c = config.circuitBreakerConfig) === null || _c === void 0 ? void 0 : _c.resetTimeout) || 30000,
+        };
         const opts = {
-            timeout: 20000,
+            timeout: circuitBreakerOptions.timeout + 50,
         };
         try {
             if (nats && !nats.isDraining() && !nats.isClosed()) {
-                const msg = { request, serverInfo };
-                const response = yield nats.request(subject, instance_1.jsonCodec.encode(msg), opts);
+                const jsonMsg = instance_1.jsonCodec.encode({ request, serverInfo });
+                if (!breaker) {
+                    debug(`Initializing circuit breaker with ${JSON.stringify(circuitBreakerOptions)}`);
+                    breaker = new opossum_1.default(sendGetRequest, circuitBreakerOptions);
+                }
+                let response = null;
+                try {
+                    response = yield breaker.fire(nats, subject, jsonMsg, opts);
+                }
+                catch (e) {
+                    const stats = breaker.stats;
+                    const errorRate = ((stats.failures || stats.rejects) / stats.fires) * 100;
+                    debug(`Circuit Breaker Error Stats with an error rate of ${errorRate}%:\n${JSON.stringify(stats, null, 2)}`);
+                    throw e;
+                }
                 if (response instanceof nats_1.NatsError &&
                     response.code === nats_1.ErrorCode.Timeout) {
                     throw new errors_1.BadRequest("Request timed out on feathers-nats-distributed.", serviceActions);
@@ -69,9 +95,11 @@ function sendRequest(sendRequestScope) {
                 case nats_1.ErrorCode.NoResponders:
                     throw new errors_1.Unavailable(`No listeners subscribed to ${subject}`);
                 case nats_1.ErrorCode.Timeout:
-                    throw new errors_1.Timeout("NATS service call timed out");
+                    throw new errors_1.Timeout(`NATS service call timed out. ${err.message}`);
+                case "ETIMEDOUT":
+                    throw new errors_1.Timeout(`Circuit breaker timeout. ${err.message}`);
                 default:
-                    throw err;
+                    throw new errors_1.Unavailable(err.message);
             }
         }
     });

@@ -1,5 +1,5 @@
 import { NatsConnection, Subscription } from "nats";
-import { ServiceMethods, InitConfig } from "../common/types";
+import { ServiceMethods, ServerConfig } from "../common/types";
 export default class natsResponse {
     private app;
     private nats;
@@ -8,7 +8,7 @@ export default class natsResponse {
     private Services;
     private timer;
     private serverInfo;
-    constructor(app: any, config: InitConfig, nats: NatsConnection);
+    constructor(app: any, config: ServerConfig, nats: NatsConnection);
     static getRandomInt(min?: number, max?: number): number;
     startServicePublisher(): Promise<void>;
     stopServicePublisher(): void;

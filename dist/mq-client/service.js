@@ -35,6 +35,7 @@ class NatsService {
                 nats: this.nats,
                 app: this.app,
                 serverInfo: this.serverInfo,
+                config: this.config,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Find,
                 request: {
@@ -57,6 +58,7 @@ class NatsService {
                 nats: this.nats,
                 app: this.app,
                 serverInfo: this.serverInfo,
+                config: this.config,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Get,
                 request: {
@@ -83,6 +85,7 @@ class NatsService {
                 nats: this.nats,
                 app: this.app,
                 serverInfo: this.serverInfo,
+                config: this.config,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Create,
                 request: {
@@ -106,6 +109,7 @@ class NatsService {
                 nats: this.nats,
                 app: this.app,
                 serverInfo: this.serverInfo,
+                config: this.config,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Update,
                 request: {
@@ -130,6 +134,7 @@ class NatsService {
                 nats: this.nats,
                 app: this.app,
                 serverInfo: this.serverInfo,
+                config: this.config,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Patch,
                 request: {
@@ -154,6 +159,7 @@ class NatsService {
                 nats: this.nats,
                 app: this.app,
                 serverInfo: this.serverInfo,
+                config: this.config,
                 serviceName: serviceName,
                 methodName: types_1.ServiceMethods.Remove,
                 request: {

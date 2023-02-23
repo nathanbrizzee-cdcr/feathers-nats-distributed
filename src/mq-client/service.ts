@@ -6,8 +6,7 @@ import type { Id, NullableId, Params } from "@feathersjs/feathers"
 import { FeathersKoaContext } from "@feathersjs/koa"
 import { getInstance, NatsConnection } from "../instance"
 import {
-  InitConfig,
-  ServiceActions,
+  ClientConfig,
   SendRequestScope,
   ServiceMethods,
   Reply,
@@ -18,14 +17,11 @@ const { sendRequest } = require("./send-request")
 
 export class NatsService {
   app: any
-  /**
-   * Feathers Path variable - which is the service name
-   */
   nats: NatsConnection
-  config: InitConfig
+  config: ClientConfig
   serverInfo: ServerInfo
 
-  constructor(app: any, nats: NatsConnection, config: InitConfig) {
+  constructor(app: any, nats: NatsConnection, config: ClientConfig) {
     this.app = app
     this.nats = nats
     this.config = config
@@ -46,6 +42,7 @@ export class NatsService {
       nats: this.nats,
       app: this.app,
       serverInfo: this.serverInfo,
+      config: this.config,
       serviceName: serviceName,
       methodName: ServiceMethods.Find,
       request: {
@@ -72,6 +69,7 @@ export class NatsService {
       nats: this.nats,
       app: this.app,
       serverInfo: this.serverInfo,
+      config: this.config,
       serviceName: serviceName,
       methodName: ServiceMethods.Get,
       request: {
@@ -108,6 +106,7 @@ export class NatsService {
       nats: this.nats,
       app: this.app,
       serverInfo: this.serverInfo,
+      config: this.config,
       serviceName: serviceName,
       methodName: ServiceMethods.Create,
       request: {
@@ -137,6 +136,7 @@ export class NatsService {
       nats: this.nats,
       app: this.app,
       serverInfo: this.serverInfo,
+      config: this.config,
       serviceName: serviceName,
       methodName: ServiceMethods.Update,
       request: {
@@ -167,6 +167,7 @@ export class NatsService {
       nats: this.nats,
       app: this.app,
       serverInfo: this.serverInfo,
+      config: this.config,
       serviceName: serviceName,
       methodName: ServiceMethods.Patch,
       request: {
@@ -196,6 +197,7 @@ export class NatsService {
       nats: this.nats,
       app: this.app,
       serverInfo: this.serverInfo,
+      config: this.config,
       serviceName: serviceName,
       methodName: ServiceMethods.Remove,
       request: {

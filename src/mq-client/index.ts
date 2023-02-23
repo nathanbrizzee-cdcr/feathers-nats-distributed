@@ -1,17 +1,17 @@
 "use strict"
 import Debug from "debug"
 const debug = Debug("feathers-nats-distributed:client:index")
-import { BadRequest, NotFound, FeathersError } from "@feathersjs/errors"
-import { FeathersKoaContext } from "@feathersjs/koa"
+import { BadRequest } from "@feathersjs/errors"
 import ShortUniqueId from "short-unique-id"
-import { getInstance, NatsConnection, InitConfig } from "../instance"
+import { getInstance, NatsConnection } from "../instance"
 import { sanitizeAppName } from "../common/helpers"
-import { ServiceMethods } from "../common/types"
+import { ClientConfig } from "../common/types"
 import { NatsService } from "./service"
 export { NatsService }
+
 let nats: NatsConnection
 
-const Client = function (config: InitConfig): (this: any) => void {
+const Client = function (config: ClientConfig): (this: any) => void {
   return function mqclient(this: any): void {
     const app: any = this as any
 

@@ -1,17 +1,28 @@
 import { NatsConnection, ConnectionOptions, MsgHdrs } from "nats";
 import type { NullableId, Params } from "@feathersjs/feathers";
 import { FeathersError } from "@feathersjs/errors";
-export type InitConfig = {
+export type BaseConfig = {
     appName: string;
     appVersion: string;
     appInstanceID?: string;
     natsConfig: ConnectionOptions;
+};
+export type BaseServerConfig = {
     servicePublisher?: {
         publishServices: boolean;
         servicesIgnoreList?: string[];
         publishDelay: number;
     };
 };
+export type BaseClientConfig = {
+    circuitBreakerConfig?: {
+        requestTimeout?: number;
+        resetTimeout?: number;
+        errorThresholdPercentage?: number;
+    };
+};
+export type ServerConfig = BaseConfig & BaseServerConfig;
+export type ClientConfig = BaseConfig & BaseClientConfig;
 export type ServiceActions = {
     serverName: string;
     servicePath: string;
@@ -48,6 +59,7 @@ export type SendRequestScope = {
     nats: NatsConnection;
     app: any;
     serverInfo: ServerInfo;
+    config: ClientConfig;
     serviceName: string;
     methodName: ServiceMethods;
     request: RequestParams;

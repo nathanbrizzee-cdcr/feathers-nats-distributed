@@ -1,3 +1,3 @@
-import { InitConfig } from "../instance";
-declare const Server: (config: InitConfig) => (this: any) => void;
+import { ServerConfig } from "../common/types";
+declare const Server: (config: ServerConfig) => (this: any) => void;
 export { Server };

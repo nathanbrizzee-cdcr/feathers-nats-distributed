@@ -10,7 +10,7 @@ import {
 import type { NullableId, Params } from "@feathersjs/feathers"
 import { FeathersError } from "@feathersjs/errors"
 
-export type InitConfig = {
+export type BaseConfig = {
   /**The name of this server. Usually package.json.name */
   appName: string
   /**The version of this server.  Usually package.json.version */
@@ -19,6 +19,8 @@ export type InitConfig = {
   appInstanceID?: string
   /**A NATS connection object */
   natsConfig: ConnectionOptions
+}
+export type BaseServerConfig = {
   /** Configuration for a server to publish a list of its services */
   servicePublisher?: {
     /**
@@ -47,6 +49,30 @@ export type InitConfig = {
     publishDelay: number
   }
 }
+export type BaseClientConfig = {
+  circuitBreakerConfig?: {
+    /**
+     * Number of ms for the circuit breaker to wait before failing a call.
+     * Note: The Nats service timeout will be set to this amount plus 50 ms
+     * @default 5000 ms
+     */
+    requestTimeout?: number
+    /**
+     * Number of ms to wait before reseting the circuit breaker retry logic
+     * Note: This number should be a bit larger than
+     * @default 30000 ms
+     */
+    resetTimeout?: number
+    /**
+     * Percentage of requests if failed will trip the circuit breaker
+     * Valid values are 0 to 100.
+     * @default 50 percent
+     */
+    errorThresholdPercentage?: number
+  }
+}
+export type ServerConfig = BaseConfig & BaseServerConfig
+export type ClientConfig = BaseConfig & BaseClientConfig
 
 export type ServiceActions = {
   serverName: string
@@ -89,6 +115,7 @@ export type SendRequestScope = {
   nats: NatsConnection
   app: any
   serverInfo: ServerInfo
+  config: ClientConfig
   serviceName: string
   methodName: ServiceMethods
   request: RequestParams

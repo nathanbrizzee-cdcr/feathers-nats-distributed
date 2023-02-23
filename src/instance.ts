@@ -10,7 +10,6 @@ import {
   StringCodec,
   Events,
 } from "nats"
-import { InitConfig, ServiceActions } from "./common/types"
 
 const jsonCodec: Codec<unknown> = JSONCodec()
 const stringCodec: Codec<string> = StringCodec()
@@ -109,6 +108,4 @@ export {
   closeInstance,
   NatsConnection,
   ConnectionOptions,
-  InitConfig,
-  ServiceActions,
 }
