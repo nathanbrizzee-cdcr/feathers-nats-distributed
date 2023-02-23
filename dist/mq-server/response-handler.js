@@ -126,7 +126,7 @@ class natsResponse {
                     servicePath: "",
                 }),
             };
-            debug("Creating service subscription queue on ", queueOpts.queue);
+            debug("Creating service subscription queue on", queueOpts.queue);
             const sub = this.nats.subscribe(queueOpts.queue, queueOpts);
             (() => __awaiter(this, void 0, void 0, function* () {
                 var _a, e_1, _b, _c;
