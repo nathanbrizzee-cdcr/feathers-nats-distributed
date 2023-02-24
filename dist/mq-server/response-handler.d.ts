@@ -13,5 +13,6 @@ export default class natsResponse {
     startServicePublisher(): Promise<void>;
     stopServicePublisher(): void;
     private _publishServices;
+    private _publishEvent;
     createService(serviceMethod: ServiceMethods): Promise<Subscription>;
 }

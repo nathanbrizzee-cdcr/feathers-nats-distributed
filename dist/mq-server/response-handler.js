@@ -25,6 +25,7 @@ const types_1 = require("../common/types");
 const instance_1 = require("../instance");
 const debug_1 = __importDefault(require("debug"));
 const debug = (0, debug_1.default)("feathers-nats-distributed:server:response-handler");
+const serviceListeners = new Set();
 class natsResponse {
     constructor(app, config, nats) {
         var _a, _b;
@@ -107,12 +108,29 @@ class natsResponse {
                     yield self.nats.publish(subject, instance_1.jsonCodec.encode(msg));
                 }
                 else {
-                    debug("NATS connecton is draining or is closed");
+                    debug("_publishServices: NATS connecton is draining or is closed");
                 }
             }
             catch (e) {
                 debug(e);
                 throw e;
+            }
+        });
+    }
+    _publishEvent(self, subject, message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (self.nats && !self.nats.isDraining() && !self.nats.isClosed()) {
+                try {
+                    debug(`Publishing Event to NATS subject ${subject}`);
+                    const reply = { data: message, serverInfo: self.serverInfo };
+                    yield self.nats.publish(subject, instance_1.jsonCodec.encode(reply));
+                }
+                catch (e) {
+                    debug(e);
+                }
+            }
+            else {
+                debug("_publishEvent: NATS connecton is draining or is closed");
             }
         });
     }
@@ -141,9 +159,47 @@ class natsResponse {
                                 if (!this.Services.includes(svcInfo.servicePath)) {
                                     throw new errors_1.NotFound(`Service \`${svcInfo.servicePath}\` is not registered in this server.`);
                                 }
-                                const availableMethods = Object.keys(this.app.services[svcInfo.servicePath]);
+                                const service = this.app.services[svcInfo.servicePath];
+                                const availableMethods = Object.keys(service);
                                 if (!availableMethods.includes(svcInfo.methodName)) {
                                     throw new errors_1.MethodNotAllowed(`Method \`${svcInfo.methodName}\` is not supported by this endpoint.`);
+                                }
+                                const serviceKey = `${serviceMethod}.${svcInfo.servicePath}`;
+                                if (!serviceListeners.has(serviceKey)) {
+                                    serviceListeners.add(serviceKey);
+                                    debug(`Registering Event listener for key ${serviceKey}`);
+                                    const action = Object.assign({}, svcInfo);
+                                    action.serviceType = types_1.ServiceTypes.Event;
+                                    const subject = (0, helpers_1.makeNatsSubjectName)(action);
+                                    const self = this;
+                                    switch (serviceMethod) {
+                                        case types_1.ServiceMethods.Create:
+                                            service.on(types_1.ServiceEventTypes.Created, (message) => {
+                                                debug("created event:", message);
+                                                self._publishEvent(self, subject, message);
+                                            });
+                                            break;
+                                        case types_1.ServiceMethods.Update:
+                                            service.on(types_1.ServiceEventTypes.Updated, (message) => {
+                                                debug("updated event:", message);
+                                                self._publishEvent(self, subject, message);
+                                            });
+                                            break;
+                                        case types_1.ServiceMethods.Patch:
+                                            service.on(types_1.ServiceEventTypes.Patched, (message) => {
+                                                debug("patched event:", message);
+                                                self._publishEvent(self, subject, message);
+                                            });
+                                            break;
+                                        case types_1.ServiceMethods.Remove:
+                                            service.on(types_1.ServiceEventTypes.Removed, (message) => {
+                                                debug("removed event:", message);
+                                                self._publishEvent(self, subject, message);
+                                            });
+                                            break;
+                                        default:
+                                            break;
+                                    }
                                 }
                                 let result;
                                 const data = instance_1.jsonCodec.decode(m.data);
@@ -151,34 +207,22 @@ class natsResponse {
                                 const request = data.request;
                                 switch (serviceMethod) {
                                     case types_1.ServiceMethods.Find:
-                                        result = yield this.app
-                                            .service(svcInfo.servicePath)
-                                            .find(request.params);
+                                        result = yield service.find(request.params);
                                         break;
                                     case types_1.ServiceMethods.Get:
-                                        result = yield this.app
-                                            .service(svcInfo.servicePath)
-                                            .get(request.id, request.params);
+                                        result = yield service.get(request.id, request.params);
                                         break;
                                     case types_1.ServiceMethods.Create:
-                                        result = yield this.app
-                                            .service(svcInfo.servicePath)
-                                            .create(request.data, request.params);
+                                        result = yield service.create(request.data, request.params);
                                         break;
                                     case types_1.ServiceMethods.Patch:
-                                        result = yield this.app
-                                            .service(svcInfo.servicePath)
-                                            .patch(request.id, request.data, request.params);
+                                        result = yield service.patch(request.id, request.data, request.params);
                                         break;
                                     case types_1.ServiceMethods.Update:
-                                        result = yield this.app
-                                            .service(svcInfo.servicePath)
-                                            .update(request.id, request.data, request.params);
+                                        result = yield service.update(request.id, request.data, request.params);
                                         break;
                                     case types_1.ServiceMethods.Remove:
-                                        result = yield this.app
-                                            .service(svcInfo.servicePath)
-                                            .remove(request.id, request.params);
+                                        result = yield service.remove(request.id, request.params);
                                         break;
                                     default:
                                         result = {};

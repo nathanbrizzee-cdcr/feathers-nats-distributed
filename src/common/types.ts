@@ -97,9 +97,16 @@ export enum ServiceMethods {
 
 export enum ServiceTypes {
   Unknown = "",
-  Service = "service",
+  Service = "servicecall",
   Event = "event",
   ServiceList = "servicelist",
+}
+
+export enum ServiceEventTypes {
+  Created = "created",
+  Updated = "updated",
+  Patched = "patched",
+  Removed = "removed",
 }
 
 export type ServerInfo = {

@@ -66,6 +66,7 @@ const makeNatsSubjectName = function (serviceActions: ServiceActions) {
   const subject = `${serviceActions.serviceType}.${newServerName}.${serviceActions.methodName}.${newServicename}`
   return subject
 }
+
 const makeNatsQueueOption = function (serviceActions: ServiceActions): string {
   let newServerName = sanitizeAppName(serviceActions.serverName)
   const queue: string = `${serviceActions.serviceType}.${newServerName}.${serviceActions.methodName}.>`

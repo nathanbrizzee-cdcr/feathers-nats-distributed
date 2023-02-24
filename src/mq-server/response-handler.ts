@@ -12,6 +12,7 @@ import {
   getServiceName,
   makeNatsQueueOption,
   makeNatsPubSubjectName,
+  makeNatsSubjectName,
 } from "../common/helpers"
 import {
   ServiceMethods,
@@ -21,11 +22,14 @@ import {
   ServerConfig,
   ServerInfo,
   RequestParams,
+  ServiceEventTypes,
 } from "../common/types"
 import { jsonCodec } from "../instance"
-
 import Debug from "debug"
 const debug = Debug("feathers-nats-distributed:server:response-handler")
+
+/**A Set to keep track of service names that have listeners added to them */
+const serviceListeners = new Set()
 export default class natsResponse {
   private app: any // FeathersJS app object
   private nats: NatsConnection
@@ -135,13 +139,28 @@ export default class natsResponse {
       if (self.nats && !self.nats.isDraining() && !self.nats.isClosed()) {
         await self.nats.publish(subject, jsonCodec.encode(msg))
       } else {
-        debug("NATS connecton is draining or is closed")
+        debug("_publishServices: NATS connecton is draining or is closed")
       }
     } catch (e) {
       debug(e)
       throw e
     }
   }
+  private async _publishEvent(self: any, subject: string, message: any) {
+    if (self.nats && !self.nats.isDraining() && !self.nats.isClosed()) {
+      try {
+        debug(`Publishing Event to NATS subject ${subject}`)
+        const reply: Reply = { data: message, serverInfo: self.serverInfo }
+        await self.nats.publish(subject, jsonCodec.encode(reply))
+      } catch (e) {
+        // swallow the error since we can't do much about it
+        debug(e)
+      }
+    } else {
+      debug("_publishEvent: NATS connecton is draining or is closed")
+    }
+  }
+
   /**
    * Creates a new service handler for a service method
    * @param serviceMethod Which service method to create a listener for
@@ -157,6 +176,7 @@ export default class natsResponse {
         servicePath: "",
       }),
     }
+
     debug("Creating service subscription queue on", queueOpts.queue)
     // create a subscription - note the option for a queue, if set
     // any client with the same queue will be a member of the receiving group.
@@ -172,10 +192,8 @@ export default class natsResponse {
               `Service \`${svcInfo.servicePath}\` is not registered in this server.`
             )
           }
-
-          const availableMethods = Object.keys(
-            this.app.services[svcInfo.servicePath]
-          )
+          const service = this.app.services[svcInfo.servicePath]
+          const availableMethods = Object.keys(service)
           // check if the 'service method' is registered
           if (!availableMethods.includes(svcInfo.methodName)) {
             throw new MethodNotAllowed(
@@ -183,41 +201,80 @@ export default class natsResponse {
             )
           }
 
+          // Register event listeners to forward the events over NATS
+          // We register the events only once.  Each time we call the .on function,
+          // it registers another handler so we only want to add them once
+          const serviceKey: string = `${serviceMethod}.${svcInfo.servicePath}`
+          if (!serviceListeners.has(serviceKey)) {
+            serviceListeners.add(serviceKey)
+            debug(`Registering Event listener for key ${serviceKey}`)
+            const action: ServiceActions = Object.assign({}, svcInfo)
+            action.serviceType = ServiceTypes.Event
+
+            const subject = makeNatsSubjectName(action)
+            // debug(JSON.stringify({ subject, action }))
+            const self = this
+            switch (serviceMethod) {
+              case ServiceMethods.Create:
+                service.on(ServiceEventTypes.Created, (message: any) => {
+                  debug("created event:", message)
+                  self._publishEvent(self, subject, message)
+                })
+                break
+              case ServiceMethods.Update:
+                service.on(ServiceEventTypes.Updated, (message: any) => {
+                  debug("updated event:", message)
+                  self._publishEvent(self, subject, message)
+                })
+                break
+              case ServiceMethods.Patch:
+                service.on(ServiceEventTypes.Patched, (message: any) => {
+                  debug("patched event:", message)
+                  self._publishEvent(self, subject, message)
+                })
+                break
+              case ServiceMethods.Remove:
+                service.on(ServiceEventTypes.Removed, (message: any) => {
+                  debug("removed event:", message)
+                  self._publishEvent(self, subject, message)
+                })
+                break
+              default:
+                break
+            }
+          }
+
           let result: any
           const data: any = jsonCodec.decode(m.data)
           debug(JSON.stringify({ svcInfo, reply: data }))
           const request = data.request as RequestParams
+
           switch (serviceMethod) {
             case ServiceMethods.Find:
-              result = await this.app
-                .service(svcInfo.servicePath)
-                .find(request.params)
+              result = await service.find(request.params)
               break
-
             case ServiceMethods.Get:
-              result = await this.app
-                .service(svcInfo.servicePath)
-                .get(request.id, request.params)
+              result = await service.get(request.id, request.params)
               break
             case ServiceMethods.Create:
-              result = await this.app
-                .service(svcInfo.servicePath)
-                .create(request.data, request.params)
+              result = await service.create(request.data, request.params)
               break
             case ServiceMethods.Patch:
-              result = await this.app
-                .service(svcInfo.servicePath)
-                .patch(request.id, request.data, request.params)
+              result = await service.patch(
+                request.id,
+                request.data,
+                request.params
+              )
               break
             case ServiceMethods.Update:
-              result = await this.app
-                .service(svcInfo.servicePath)
-                .update(request.id, request.data, request.params)
+              result = await service.update(
+                request.id,
+                request.data,
+                request.params
+              )
               break
             case ServiceMethods.Remove:
-              result = await this.app
-                .service(svcInfo.servicePath)
-                .remove(request.id, request.params)
+              result = await service.remove(request.id, request.params)
               break
             default:
               result = {}
