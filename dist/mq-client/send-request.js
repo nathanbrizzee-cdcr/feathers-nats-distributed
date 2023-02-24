@@ -40,9 +40,9 @@ function sendRequest(sendRequestScope) {
         const subject = (0, helpers_1.makeNatsSubjectName)(serviceActions);
         debug(`Sending Request to NATS queue ${subject}`);
         const circuitBreakerOptions = {
-            timeout: ((_a = config.circuitBreakerConfig) === null || _a === void 0 ? void 0 : _a.requestTimeout) || 5000,
-            errorThresholdPercentage: ((_b = config.circuitBreakerConfig) === null || _b === void 0 ? void 0 : _b.errorThresholdPercentage) || 50,
-            resetTimeout: ((_c = config.circuitBreakerConfig) === null || _c === void 0 ? void 0 : _c.resetTimeout) || 30000,
+            timeout: ((_a = config.circuitBreaker) === null || _a === void 0 ? void 0 : _a.requestTimeout) || 5000,
+            errorThresholdPercentage: ((_b = config.circuitBreaker) === null || _b === void 0 ? void 0 : _b.errorThresholdPercentage) || 50,
+            resetTimeout: ((_c = config.circuitBreaker) === null || _c === void 0 ? void 0 : _c.resetTimeout) || 30000,
         };
         const opts = {
             timeout: circuitBreakerOptions.timeout + 50,
@@ -53,7 +53,7 @@ function sendRequest(sendRequestScope) {
                 if (!breaker) {
                     debug(`Initializing circuit breaker with ${JSON.stringify(circuitBreakerOptions)}`);
                     breaker = new opossum_1.default(sendGetRequest, circuitBreakerOptions);
-                    if (((_d = config.circuitBreakerConfig) === null || _d === void 0 ? void 0 : _d.enabled) === true) {
+                    if (((_d = config.circuitBreaker) === null || _d === void 0 ? void 0 : _d.enabled) === true) {
                         breaker.enable();
                     }
                     else {

@@ -42,6 +42,9 @@ class NatsService {
                     params: {
                         query: _params === null || _params === void 0 ? void 0 : _params.query,
                         provider: _params === null || _params === void 0 ? void 0 : _params.provider,
+                        authentication: _params === null || _params === void 0 ? void 0 : _params.authentication,
+                        authenticated: _params === null || _params === void 0 ? void 0 : _params.authenticated,
+                        user: _params === null || _params === void 0 ? void 0 : _params.user,
                         route: _params === null || _params === void 0 ? void 0 : _params.route,
                         headers: _params === null || _params === void 0 ? void 0 : _params.headers,
                     },
@@ -66,6 +69,9 @@ class NatsService {
                     params: {
                         query: _params === null || _params === void 0 ? void 0 : _params.query,
                         provider: _params === null || _params === void 0 ? void 0 : _params.provider,
+                        authentication: _params === null || _params === void 0 ? void 0 : _params.authentication,
+                        authenticated: _params === null || _params === void 0 ? void 0 : _params.authenticated,
+                        user: _params === null || _params === void 0 ? void 0 : _params.user,
                         route: _params === null || _params === void 0 ? void 0 : _params.route,
                         headers: _params === null || _params === void 0 ? void 0 : _params.headers,
                     },
@@ -75,10 +81,10 @@ class NatsService {
             return reply.data;
         });
     }
-    create(serverName, serviceName, data, params) {
+    create(serverName, serviceName, data, _params) {
         return __awaiter(this, void 0, void 0, function* () {
             if (Array.isArray(data)) {
-                return Promise.all(data.map(current => this.create(serverName, serviceName, current, params)));
+                return Promise.all(data.map(current => this.create(serverName, serviceName, current, _params)));
             }
             const sendRequestScope = {
                 appName: serverName,
@@ -91,10 +97,13 @@ class NatsService {
                 request: {
                     data: data,
                     params: {
-                        query: params === null || params === void 0 ? void 0 : params.query,
-                        provider: params === null || params === void 0 ? void 0 : params.provider,
-                        route: params === null || params === void 0 ? void 0 : params.route,
-                        headers: params === null || params === void 0 ? void 0 : params.headers,
+                        query: _params === null || _params === void 0 ? void 0 : _params.query,
+                        provider: _params === null || _params === void 0 ? void 0 : _params.provider,
+                        authentication: _params === null || _params === void 0 ? void 0 : _params.authentication,
+                        authenticated: _params === null || _params === void 0 ? void 0 : _params.authenticated,
+                        user: _params === null || _params === void 0 ? void 0 : _params.user,
+                        route: _params === null || _params === void 0 ? void 0 : _params.route,
+                        headers: _params === null || _params === void 0 ? void 0 : _params.headers,
                     },
                 },
             };
@@ -118,6 +127,9 @@ class NatsService {
                     params: {
                         query: _params === null || _params === void 0 ? void 0 : _params.query,
                         provider: _params === null || _params === void 0 ? void 0 : _params.provider,
+                        authentication: _params === null || _params === void 0 ? void 0 : _params.authentication,
+                        authenticated: _params === null || _params === void 0 ? void 0 : _params.authenticated,
+                        user: _params === null || _params === void 0 ? void 0 : _params.user,
                         route: _params === null || _params === void 0 ? void 0 : _params.route,
                         headers: _params === null || _params === void 0 ? void 0 : _params.headers,
                     },
@@ -143,6 +155,9 @@ class NatsService {
                     params: {
                         query: _params === null || _params === void 0 ? void 0 : _params.query,
                         provider: _params === null || _params === void 0 ? void 0 : _params.provider,
+                        authentication: _params === null || _params === void 0 ? void 0 : _params.authentication,
+                        authenticated: _params === null || _params === void 0 ? void 0 : _params.authenticated,
+                        user: _params === null || _params === void 0 ? void 0 : _params.user,
                         route: _params === null || _params === void 0 ? void 0 : _params.route,
                         headers: _params === null || _params === void 0 ? void 0 : _params.headers,
                     },
@@ -167,6 +182,9 @@ class NatsService {
                     params: {
                         query: _params === null || _params === void 0 ? void 0 : _params.query,
                         provider: _params === null || _params === void 0 ? void 0 : _params.provider,
+                        authentication: _params === null || _params === void 0 ? void 0 : _params.authentication,
+                        authenticated: _params === null || _params === void 0 ? void 0 : _params.authenticated,
+                        user: _params === null || _params === void 0 ? void 0 : _params.user,
                         route: _params === null || _params === void 0 ? void 0 : _params.route,
                         headers: _params === null || _params === void 0 ? void 0 : _params.headers,
                     },

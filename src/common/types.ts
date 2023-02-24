@@ -50,7 +50,7 @@ export type BaseServerConfig = {
   }
 }
 export type BaseClientConfig = {
-  circuitBreakerConfig?: {
+  circuitBreaker?: {
     /** whether the circuit breaker is enabled or not
      * @default false
      */

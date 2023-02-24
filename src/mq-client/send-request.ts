@@ -26,6 +26,7 @@ const sendGetRequest = async function (
 ): Promise<any> {
   return await nats.request(subject, jsonMsg, opts)
 }
+
 let breaker: any = null
 
 export async function sendRequest(
@@ -43,11 +44,12 @@ export async function sendRequest(
   debug(`Sending Request to NATS queue ${subject}`)
 
   const circuitBreakerOptions = {
-    timeout: config.circuitBreakerConfig?.requestTimeout || 5000, // If our function takes longer than XX seconds, trigger a failure
+    timeout: config.circuitBreaker?.requestTimeout || 5000, // If our function takes longer than XX seconds, trigger a failure
     errorThresholdPercentage:
-      config.circuitBreakerConfig?.errorThresholdPercentage || 50, // When XX% of requests fail, trip the circuit
-    resetTimeout: config.circuitBreakerConfig?.resetTimeout || 30000, // After XX seconds, try again.
+      config.circuitBreaker?.errorThresholdPercentage || 50, // When XX% of requests fail, trip the circuit
+    resetTimeout: config.circuitBreaker?.resetTimeout || 30000, // After XX seconds, try again.
   }
+  // Make NATS timeout slightly larger than the circuit breaker timeout
   const opts: RequestOptions = {
     timeout: circuitBreakerOptions.timeout + 50,
   }
@@ -64,7 +66,7 @@ export async function sendRequest(
           )}`
         )
         breaker = new CircuitBreaker(sendGetRequest, circuitBreakerOptions)
-        if (config.circuitBreakerConfig?.enabled === true) {
+        if (config.circuitBreaker?.enabled === true) {
           breaker.enable()
         } else {
           breaker.disable()

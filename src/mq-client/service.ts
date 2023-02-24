@@ -49,6 +49,10 @@ export class NatsService {
         params: {
           query: _params?.query,
           provider: _params?.provider,
+          authentication: _params?.authentication,
+          authenticated: _params?.authenticated,
+          // @ts-expect-error - User is will exist on authenticated calls
+          user: _params?.user,
           route: _params?.route,
           headers: _params?.headers,
         },
@@ -77,6 +81,10 @@ export class NatsService {
         params: {
           query: _params?.query,
           provider: _params?.provider,
+          authentication: _params?.authentication,
+          authenticated: _params?.authenticated,
+          // @ts-expect-error - User is will exist on authenticated calls
+          user: _params?.user,
           route: _params?.route,
           headers: _params?.headers,
         },
@@ -91,12 +99,12 @@ export class NatsService {
     serverName: string,
     serviceName: string,
     data: Object | Array<any>,
-    params?: Params
+    _params?: Params
   ): Promise<Object | undefined> {
     if (Array.isArray(data)) {
       return Promise.all(
         data.map(current =>
-          this.create(serverName, serviceName, current, params)
+          this.create(serverName, serviceName, current, _params)
         )
       )
     }
@@ -112,10 +120,14 @@ export class NatsService {
       request: {
         data: data,
         params: {
-          query: params?.query,
-          provider: params?.provider,
-          route: params?.route,
-          headers: params?.headers,
+          query: _params?.query,
+          provider: _params?.provider,
+          authentication: _params?.authentication,
+          authenticated: _params?.authenticated,
+          // @ts-expect-error - User is will exist on authenticated calls
+          user: _params?.user,
+          route: _params?.route,
+          headers: _params?.headers,
         },
       },
     }
@@ -145,6 +157,10 @@ export class NatsService {
         params: {
           query: _params?.query,
           provider: _params?.provider,
+          authentication: _params?.authentication,
+          authenticated: _params?.authenticated,
+          // @ts-expect-error - User is will exist on authenticated calls
+          user: _params?.user,
           route: _params?.route,
           headers: _params?.headers,
         },
@@ -176,6 +192,10 @@ export class NatsService {
         params: {
           query: _params?.query,
           provider: _params?.provider,
+          authentication: _params?.authentication,
+          authenticated: _params?.authenticated,
+          // @ts-expect-error - User is will exist on authenticated calls
+          user: _params?.user,
           route: _params?.route,
           headers: _params?.headers,
         },
@@ -205,6 +225,10 @@ export class NatsService {
         params: {
           query: _params?.query,
           provider: _params?.provider,
+          authentication: _params?.authentication,
+          authenticated: _params?.authenticated,
+          // @ts-expect-error - User is will exist on authenticated calls
+          user: _params?.user,
           route: _params?.route,
           headers: _params?.headers,
         },
