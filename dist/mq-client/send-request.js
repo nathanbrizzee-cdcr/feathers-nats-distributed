@@ -65,6 +65,7 @@ function sendRequest(sendRequestScope) {
                     response = yield breaker.fire(nats, subject, jsonMsg, opts);
                 }
                 catch (e) {
+                    debug(e);
                     const stats = breaker.stats;
                     const errorRate = ((stats.failures || stats.rejects) / stats.fires) * 100;
                     debug(`Circuit Breaker Error Stats with an error rate of ${errorRate}%:\n${JSON.stringify(stats, null, 2)}`);
@@ -105,7 +106,7 @@ function sendRequest(sendRequestScope) {
                 case "ETIMEDOUT":
                     throw new errors_1.Timeout(`Circuit breaker timeout. ${err.message}`);
                 default:
-                    throw new errors_1.Unavailable(err.message);
+                    throw new errors_1.Unavailable(`Unknown error :${err.message}`);
             }
         }
     });

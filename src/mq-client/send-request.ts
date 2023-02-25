@@ -76,6 +76,7 @@ export async function sendRequest(
       try {
         response = await breaker.fire(nats, subject, jsonMsg, opts)
       } catch (e) {
+        debug(e)
         const stats = breaker.stats
         const errorRate =
           ((stats.failures || stats.rejects) / stats.fires) * 100
@@ -136,7 +137,7 @@ export async function sendRequest(
       case "ETIMEDOUT":
         throw new Timeout(`Circuit breaker timeout. ${err.message}`)
       default:
-        throw new Unavailable(err.message)
+        throw new Unavailable(`Unknown error :${err.message}`)
       //throw err
     }
   }

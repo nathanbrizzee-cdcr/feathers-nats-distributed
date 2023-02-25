@@ -237,16 +237,20 @@ class natsResponse {
                                 }
                             }
                             catch (err) {
-                                delete err.hook;
                                 debug(err);
-                                delete err.stack;
+                                let newErr;
                                 if (err.code &&
                                     typeof err.code === "string" &&
                                     err.code === "BAD_JSON") {
-                                    err = new errors_1.BadRequest("Invalid JSON request received");
+                                    newErr = new errors_1.BadRequest("Invalid JSON request received");
                                     debug(err);
                                 }
-                                const errObj = { error: err, serverInfo: this.serverInfo };
+                                else {
+                                    newErr = new errors_1.FeathersError(err.message, err.name, err.code, err.className, {});
+                                }
+                                delete newErr.stack;
+                                const errObj = { error: newErr, serverInfo: this.serverInfo };
+                                debug({ errObj });
                                 if (m.respond(instance_1.jsonCodec.encode(errObj))) {
                                     debug(`[${this.config.appName}] reply #${sub.getProcessed()} => ${JSON.stringify(errObj)}`);
                                 }

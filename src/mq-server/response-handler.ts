@@ -7,7 +7,12 @@ import {
   Subscription,
   SubscriptionOptions,
 } from "nats"
-import { NotFound, MethodNotAllowed, BadRequest } from "@feathersjs/errors"
+import {
+  NotFound,
+  MethodNotAllowed,
+  BadRequest,
+  FeathersError,
+} from "@feathersjs/errors"
 import {
   getServiceName,
   makeNatsQueueOption,
@@ -297,18 +302,27 @@ export default class natsResponse {
             )
           }
         } catch (err: any) {
-          delete err.hook
           debug(err)
-          delete err.stack
+          let newErr: any
           if (
             err.code &&
             typeof err.code === "string" &&
             err.code === "BAD_JSON"
           ) {
-            err = new BadRequest("Invalid JSON request received")
+            newErr = new BadRequest("Invalid JSON request received")
             debug(err)
+          } else {
+            newErr = new FeathersError(
+              err.message,
+              err.name,
+              err.code,
+              err.className,
+              {}
+            )
           }
-          const errObj: Reply = { error: err, serverInfo: this.serverInfo }
+          delete newErr.stack
+          const errObj: Reply = { error: newErr, serverInfo: this.serverInfo }
+          debug({ errObj })
           if (m.respond(jsonCodec.encode(errObj))) {
             debug(
               `[${
